@@ -1,30 +1,25 @@
-import * as React from "react";
-import {
-  ChakraProvider,
-  Box,
-  Text,
-  Link,
-  VStack,
-  Code,
-  Grid,
-  theme,
-} from "@chakra-ui/react";
-import { ColorModeSwitcher } from "./ColorModeSwitcher";
-import { Logo } from "./Logo";
+import "./App.css";
+import { ColorModeButton } from "@/components/ui/color-mode";
+import { Provider } from "@/components/ui/provider";
+import { Box, Grid } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { Dashboard } from "./Dashboard";
 
-export const App = () => (
-  <ChakraProvider theme={theme}>
-    <Box textAlign="center" fontSize="xl">
-      <Grid minH="100vh" p={3}>
-        <ColorModeSwitcher justifySelf="flex-end" />
-        <Router>
-          <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Routes>
-        </Router>
-      </Grid>
-    </Box>
-  </ChakraProvider>
-);
+function App() {
+  return (
+    <Provider>
+      <Box>
+        <Grid minH="100vh" p={3}>
+          <ColorModeButton justifySelf="flex-end" />
+          <Router>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+            </Routes>
+          </Router>
+        </Grid>
+      </Box>
+    </Provider>
+  );
+}
+
+export default App;

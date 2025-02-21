@@ -12,8 +12,8 @@ export type ListEntry = {
 };
 
 export const enum ListWebsite {
-  AniList = "ANILIST",
-  MyAnimeList = "MYANIMELIST",
+  AniList = "anilist",
+  MyAnimeList = "myanimelist",
 }
 
 // Represents a single tier in the tierlist
