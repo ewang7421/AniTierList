@@ -1,4 +1,4 @@
-import type { ListEntry } from "./types";
+import type { TierListEntry, AniListResponse, List, Entry } from "@/types";
 
 // Here we define our query as a multi-line string
 // Storing it in a separate .graphql/.gql file is also possible
@@ -31,7 +31,7 @@ query ($userName: String) { # Define which variables will be used in the query (
 `;
 
 // Make the HTTP Api request
-export async function getList(username: string): Promise<ListEntry[]> {
+export async function getList(username: string): Promise<TierListEntry[]> {
   // Define our query variables and values that will be used in the query request
   const variables = {
     userName: username,
@@ -55,7 +55,7 @@ export async function getList(username: string): Promise<ListEntry[]> {
     return handleData(data);
   } catch (error) {
     handleError(error);
-    return {} as ListEntry[];
+    return {} as TierListEntry[];
   }
 }
 
@@ -64,34 +64,36 @@ async function handleResponse(response: Response) {
   return response.ok ? json : Promise.reject(json);
 }
 
-function handleData(data: any): ListEntry[] {
+function handleData(data: AniListResponse): TierListEntry[] {
   console.log(data);
   const completedList = data.data.MediaListCollection.lists.filter(
-    (list: any) => !list.isCustomList && list.status === "COMPLETED"
+    (list: List) => !list.isCustomList && list.status === "COMPLETED"
   )[0];
   console.log(completedList);
 
-  const entries: ListEntry[] = completedList.entries.map((entry: any) => ({
+  const entries: TierListEntry[] = completedList.entries.map((entry: Entry) => ({
     id: entry.media.id,
     idMal: entry.media.idMal,
     title: entry.media.title.romaji,
     imageUrl: entry.media.coverImage.large,
     score: entry.score,
     tier: 0,
+    isPreview: false,
   }));
 
+  /*
   console.assert(
     data.data.MediaListCollection.lists.filter(
       (list: any) => !list.isCustomList && list.status === "COMPLETED"
     ).length === 1,
     "There can only be one completed list"
-  );
+  ); */
   // let ret = { userId: data.data.MediaListCollection.user.id, entries: entries };
 
   return entries;
 }
 
-function handleError(error: any): void {
+function handleError(error: unknown): void {
   alert("Error, check console");
   console.error(error);
 }

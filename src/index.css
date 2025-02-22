@@ -12,10 +12,6 @@
 
 }
 
-#root {
-  width: 100%;
-}
-
 a {
   font-weight: 500;
   color: #646cff;
@@ -61,10 +57,8 @@ button:focus-visible {
 }
 
 .light {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
+  color: #213547;
+  background-color: #ffffff;
 
   a:hover {
     color: #747bff;
