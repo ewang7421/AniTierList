@@ -68,27 +68,19 @@ export const Dashboard = () => {
             onChange={(e) => {
               setUsername(e.target.value);
             }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                fetchListToInventory(username, tierListModel, setTierlistModel);
+              }
+            }}
           ></Input>
 
           <Button
             mt="25px"
             variant="subtle"
-            onClick={async () => {
-              try {
-                const entries = await getList(username); // Set the state with the fetched data
-                // Set the tier list model's inventory to the fetched anime list
-                const newInventory = {
-                  ...tierListModel.inventory,
-                  entries: entries,
-                };
-                setTierlistModel((tierlistModel) => ({
-                  ...tierlistModel,
-                  inventory: newInventory,
-                }));
-              } catch (error) {
-                console.error("Error fetching anime list:", error);
-              }
-            }}
+            onClick={() =>
+              fetchListToInventory(username, tierListModel, setTierlistModel)
+            }
           >
             get
           </Button>
@@ -110,3 +102,20 @@ const listWebsites = createListCollection({
     { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
   ],
 });
+const fetchListToInventory = async (
+  username: string,
+  tierListModel: TierListModel,
+  setTierlistModelCallback: (tierListModel: TierListModel) => void
+) => {
+  try {
+    const entries = await getList(username); // Set the state with the fetched data
+    // Set the tier list model's inventory to the fetched anime list
+    const newInventory = {
+      ...tierListModel.inventory,
+      entries: entries,
+    };
+    setTierlistModelCallback({ ...tierListModel, inventory: newInventory });
+  } catch (error) {
+    console.error("Error fetching anime list:", error);
+  }
+};
