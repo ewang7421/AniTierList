@@ -85,12 +85,7 @@ export const Dashboard = () => {
             get
           </Button>
         </HStack>
-        <Inventory
-          inventory={tierListModel.inventory}
-          handleDragStart={() => {}}
-          handleDragOver={() => {}}
-          handleDrop={() => {}}
-        />
+        <Inventory inventory={tierListModel.inventory} />
       </VStack>
     </Box>
   );

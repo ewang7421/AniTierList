@@ -4,6 +4,7 @@ import { Provider } from "@/components/ui/provider";
 import { Box, Grid } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { Dashboard } from "./Dashboard";
+import { Test } from "@/Test";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/test" element={<Test />} />
             </Routes>
           </Router>
         </Grid>
