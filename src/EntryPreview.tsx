@@ -3,10 +3,10 @@ import { TierListEntry } from "./types";
 
 interface EntryProps {
   entry: TierListEntry;
+  tierIndex: number;
 }
 
 export const EntryPreview = ({ entry }: EntryProps) => {
-  console.log("entry: ", entry);
   return (
     <Box
       w="150px"

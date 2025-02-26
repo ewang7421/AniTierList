@@ -3,6 +3,22 @@ export const enum ListWebsite {
   MyAnimeList = "myanimelist",
 }
 
+export const enum DraggableType {
+  ENTRY = "entry",
+  TIER = "tier",
+  // Add other draggable types if needed
+}
+export const enum DroppableType {
+  CONTAINER = "container",
+  ENTRY = "entry",
+  // Add other target types if needed
+}
+
+export const enum ContainerType {
+  TIER = "tier",
+  INVENTORY = "inventory",
+}
+
 // A single entry in the list
 export type TierListEntry = {
   // id number for the show on anilist/mal

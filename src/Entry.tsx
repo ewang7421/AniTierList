@@ -1,15 +1,31 @@
 import { Box } from "@chakra-ui/react";
-import { TierListEntry } from "./types";
+import {
+  DraggableType,
+  DroppableType,
+  ContainerType,
+  TierListEntry,
+} from "./types";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 interface EntryProps {
   entry: TierListEntry;
+  containerType: ContainerType;
+  containerId: string | null;
 }
 
-export const Entry = ({ entry }: EntryProps) => {
+export const Entry = ({ entry, containerType, containerId }: EntryProps) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: entry.id, data: entry });
+    useSortable({
+      id: entry.id,
+      data: {
+        entry: entry,
+        draggableType: DraggableType.ENTRY,
+        droppableType: DroppableType.ENTRY,
+        containerType: containerType,
+        containerId: containerId,
+      },
+    });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
