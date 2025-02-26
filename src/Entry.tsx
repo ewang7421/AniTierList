@@ -1,11 +1,19 @@
 import { Box } from "@chakra-ui/react";
 import { TierListEntry } from "./types";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface EntryProps {
   entry: TierListEntry;
 }
 
 export const Entry = ({ entry }: EntryProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: entry.id, data: entry });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
   return (
     <Box
       id={entry.id.toString()}
@@ -16,6 +24,10 @@ export const Entry = ({ entry }: EntryProps) => {
       bgRepeat="no-repeat"
       bgPos="center"
       borderRadius={3}
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={style}
     ></Box>
   );
 };

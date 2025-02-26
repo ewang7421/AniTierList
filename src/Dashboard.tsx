@@ -14,9 +14,14 @@ import {
 } from "@chakra-ui/react";
 import { getList } from "@/anilist.tsx";
 import { useState } from "react";
-import { ListWebsite, TierListModel } from "@/types.ts";
+import { ListWebsite, TierListEntry, TierListModel } from "@/types.ts";
 import { Tierlist } from "@/Tierlist.tsx";
 import { Inventory } from "@/Inventory.tsx";
+import { SortableContext } from "@dnd-kit/sortable";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { EntryPreview } from "@/EntryPreview.tsx";
+import { createPortal } from "react-dom";
+import { Entry } from "./Entry";
 
 export const Dashboard = () => {
   const [username, setUsername] = useState("watermeloans");
@@ -32,65 +37,87 @@ export const Dashboard = () => {
       { entries: [], name: "F", minScore: 0, maxScore: 1 },
     ],
   });
+  const [activeEntry, setActiveEntry] = useState<TierListEntry | null>(null);
+
+  const handleDragStart = (event) => {
+    console.log(event);
+    setActiveEntry(event.active.data.current);
+  };
+
+  const handleDragEnd = () => {
+    setActiveEntry(null);
+  };
   return (
-    <Box>
-      <VStack>
-        <Tierlist
-          tierModels={tierListModel.tiers}
-          handleDragStart={() => {}}
-          handleDragOver={() => {}}
-          handleDrop={() => {}}
-        />
-        <HStack align="flex-start" minHeight="150px">
-          <SelectRoot
-            variant="subtle"
-            collection={listWebsites}
-            value={[listWebsite?.toString()]}
-            onValueChange={(e) => setListWebsite(e.value)}
-          >
-            <SelectLabel>Choose Website</SelectLabel>
-            <SelectTrigger>
-              <SelectValueText placeholder="Select Website" />
-            </SelectTrigger>
-            <SelectContent>
-              {listWebsites.items.map((website) => (
-                <SelectItem item={website} key={website.value}>
-                  {website.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </SelectRoot>
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <Box>
+        <VStack>
+          <Tierlist
+            tierModels={tierListModel.tiers}
+            handleDragStart={() => {}}
+            handleDragOver={() => {}}
+            handleDrop={() => {}}
+          />
+          <HStack align="flex-start" minHeight="150px">
+            <SelectRoot
+              variant="subtle"
+              collection={listWebsites}
+              value={[listWebsite?.toString()]}
+              onValueChange={(e) => setListWebsite(e.value)}
+            >
+              <SelectLabel>Choose Website</SelectLabel>
+              <SelectTrigger>
+                <SelectValueText placeholder="Select Website" />
+              </SelectTrigger>
+              <SelectContent>
+                {listWebsites.items.map((website) => (
+                  <SelectItem item={website} key={website.value}>
+                    {website.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </SelectRoot>
 
-          <Input
-            mt="25px"
-            placeholder="username"
-            variant="subtle"
-            onChange={(e) => {
-              setUsername(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                fetchListToInventory(username, tierListModel, setTierlistModel);
+            <Input
+              mt="25px"
+              placeholder="username"
+              variant="subtle"
+              onChange={(e) => {
+                setUsername(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  fetchListToInventory(
+                    username,
+                    tierListModel,
+                    setTierlistModel
+                  );
+                }
+              }}
+            ></Input>
+
+            <Button
+              mt="25px"
+              variant="subtle"
+              onClick={() =>
+                fetchListToInventory(username, tierListModel, setTierlistModel)
               }
-            }}
-          ></Input>
+            >
+              get
+            </Button>
+          </HStack>
+          <Inventory inventory={tierListModel.inventory} />
+        </VStack>
+      </Box>
 
-          <Button
-            mt="25px"
-            variant="subtle"
-            onClick={() =>
-              fetchListToInventory(username, tierListModel, setTierlistModel)
-            }
-          >
-            get
-          </Button>
-        </HStack>
-        <Inventory inventory={tierListModel.inventory} />
-      </VStack>
-    </Box>
+      {createPortal(
+        <DragOverlay>
+          {activeEntry && <EntryPreview entry={activeEntry} />}
+        </DragOverlay>,
+        document.body
+      )}
+    </DndContext>
   );
 };
-
 const listWebsites = createListCollection({
   items: [
     { label: "Anilist", value: ListWebsite.AniList.toString() },
