@@ -47,10 +47,10 @@ export const Dashboard = () => {
     setActiveEntry(event.active.data.current.entry);
   };
 
-  // TODO: When dragging outside of window, element is not rendered anymore, so the preview is gone. 
-  // Only the overlay is shown. Fix this, and also fill out rest of logic for dropping. 
+  // TODO: fill out rest of logic for dropping.
   const handleDragEnd = (event) => {
     console.log("dragEnd: ", event);
+    console.log("dropped item: ", event.active);
     console.log("dropped over: ", event.over);
     const { active, over } = event;
     if (active.data.current.draggableType === DraggableType.ENTRY) {

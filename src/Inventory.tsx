@@ -24,6 +24,8 @@ export const Inventory = ({ inventory }: InventoryProps) => {
     data: { type: "inventory" },
   });
   return (
+    // TODO: Sortable will break on virtualized lists, check this page: https://github.com/clauderic/dnd-kit/discussions/411
+    // and implement a custom sorting strategy. 
     <Box ref={setNodeRef}>
       <SortableContext items={inventory.entries}>
         <Grid
