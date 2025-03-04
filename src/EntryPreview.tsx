@@ -3,7 +3,7 @@ import { TierListEntry } from "./types";
 
 interface EntryProps {
   entry: TierListEntry;
-  tierIndex: number;
+  containerId: "inventory" | number;
 }
 
 export const EntryPreview = ({ entry }: EntryProps) => {

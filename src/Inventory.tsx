@@ -1,60 +1,56 @@
+import { useState } from "react";
 import { SortableContext } from "@dnd-kit/sortable";
-import { VariableSizeGrid as Grid } from "react-window";
 import { Entry } from "@/Entry";
-import { InventoryModel } from "@/types";
-import "@/Inventory.css";
+import { InventoryModel } from "./types";
+import { Button, Flex, SimpleGrid } from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
-import { Box } from "@chakra-ui/react";
+
 interface InventoryProps {
   inventory: InventoryModel;
 }
-import { ContainerType } from "@/types";
 
 export const Inventory = ({ inventory }: InventoryProps) => {
-  const columnCount = 10; // Adjust based on layout needs
-  const rowCount = Math.ceil(inventory.entries.length / columnCount);
+  const columnCount = 10; // Number of columns
+  const rowsPerPage = 5; // Number of rows visible at a time
+  const itemsPerPage = columnCount * rowsPerPage; // Total visible items per page
+  const pageCount = Math.ceil(inventory.entries.length / itemsPerPage);
 
-  // Dynamic row height function (if needed)
-  const getRowHeight = () => 210; // Change as required
+  const [page, setPage] = useState(0); // Current page index
 
-  // Dynamic column width function (if needed)
-  const getColumnWidth = () => 150; // Change as required
-  const { isOver, setNodeRef } = useDroppable({
+  // Get the current page slice
+  const visibleEntries = inventory.entries.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+  const { setNodeRef } = useDroppable({
     id: "inventory",
-    data: { type: "inventory" },
+    data: { containerId: "inventory" },
   });
   return (
-    // TODO: Sortable will break on virtualized lists, check this page: https://github.com/clauderic/dnd-kit/discussions/411
-    // and implement a custom sorting strategy. 
-    <Box ref={setNodeRef}>
-      <SortableContext items={inventory.entries}>
-        <Grid
-          columnCount={columnCount}
-          rowCount={rowCount}
-          columnWidth={getColumnWidth}
-          rowHeight={getRowHeight}
-          width={1600} // Set based on container
-          height={1300} // Adjust height accordingly
-          style={{ overflow: "auto" }} // Hide scrollbars
-        >
-          {({ columnIndex, rowIndex, style }) => {
-            const entryIndex = rowIndex * columnCount + columnIndex;
-            if (entryIndex >= inventory.entries.length) return null;
-            const entry = inventory.entries[entryIndex];
+    <SortableContext items={inventory.entries}>
+      <Flex direction="column" align="center">
+        {/* Inventory Grid */}
+        <SimpleGrid columns={columnCount} ref={setNodeRef}>
+          {visibleEntries.map((entry) => (
+            <Entry key={entry.id} entry={entry} containerId={"inventory"} />
+          ))}
+        </SimpleGrid>
 
-            return (
-              <div style={style}>
-                <Entry
-                  key={entry.id}
-                  entry={entry}
-                  containerType={ContainerType.INVENTORY}
-                  containerId={null}
-                />
-              </div>
-            );
-          }}
-        </Grid>
-      </SortableContext>
-    </Box>
+        {/* Navigation Buttons */}
+        <Flex mt={2} gap={2}>
+          <Button
+            variant="subtle"
+            onClick={() => setPage((prev) => prev - 1)}
+            disabled={page === 0}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="subtle"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={page >= pageCount - 1}
+          >
+            Next
+          </Button>
+        </Flex>
+      </Flex>
+    </SortableContext>
   );
 };

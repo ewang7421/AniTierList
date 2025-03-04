@@ -13,17 +13,14 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { getList } from "@/anilist.tsx";
-import { act, useState } from "react";
+import { useState } from "react";
 import { ListWebsite, TierListEntry, TierListModel } from "@/types.ts";
 import { Tierlist } from "@/Tierlist.tsx";
 import { Inventory } from "@/Inventory.tsx";
-import { SortableContext, arrayMove } from "@dnd-kit/sortable";
+import { arrayMove } from "@dnd-kit/sortable";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { EntryPreview } from "@/EntryPreview.tsx";
 import { createPortal } from "react-dom";
-import { Entry } from "./Entry";
-import { DraggableType, DroppableType } from "@/types";
-import { data } from "react-router-dom";
 
 export const Dashboard = () => {
   const [username, setUsername] = useState("watermeloans");
@@ -53,70 +50,107 @@ export const Dashboard = () => {
     console.log("dropped item: ", event.active);
     console.log("dropped over: ", event.over);
     const { active, over } = event;
-    if (active.data.current.draggableType === DraggableType.ENTRY) {
-      //inventory -> inventory
-      if (
-        active.data.current.containerType === over.data.current.containerType &&
-        active.data.current.containerId === over.data.current.containerId
-      ) {
-        if (
-          over.data.current.sortable.index ===
-          active.data.current.sortable.index
-        )
-          return;
-        if (over.data.current.containerId === null) {
-          const newEntries = arrayMove(
-            tierListModel.inventory.entries,
-            active.data.current.sortable.index,
-            over.data.current.sortable.index
-          );
-          setTierlistModel({
-            ...tierListModel,
-            inventory: { ...tierListModel.inventory, entries: newEntries },
-          });
-          return;
-        } else {
-          const newEntries = arrayMove(
-            tierListModel.tiers[over.data.current.containerId].entries,
-            active.data.current.sortable.index,
-            over.data.current.sortable.index
-          );
+    if (active == null || over == null) {
+      return;
+    }
 
-          setTierlistModel({
-            ...tierListModel,
-            tiers: tierListModel.tiers.map((tier, index) =>
-              index === over.data.current.containerId
-                ? { ...tier, entries: newEntries }
-                : tier
+    // dragging within same tier
+    if (active.data.current.containerId == over.data.current.containerId) {
+      if (active.data.current.containerId == "inventory") {
+        setTierlistModel((prev) => ({
+          ...prev,
+          inventory: {
+            entries: arrayMove(
+              prev.inventory.entries,
+              active.data.current.sortable.index,
+              over.data.current.sortable.index
             ),
-          });
-          return;
-        }
+          },
+        }));
+      } else {
+        setTierlistModel((prev) => ({
+          ...prev,
+
+          tiers: prev.tiers.map((tier, index) =>
+            index == over.data.current.containerId
+              ? {
+                  ...tier,
+                  entries: arrayMove(
+                    tier.entries,
+                    active.data.current.sortable.index,
+                    over.data.current.sortable.index
+                  ),
+                }
+              : tier
+          ),
+        }));
       }
+    } else {
+      let newInventory = tierListModel.inventory;
+      let newTiers = tierListModel.tiers;
+
+      if (active.data.current.containerId == "inventory") {
+        newInventory = {
+          ...newInventory,
+          entries: [
+            ...newInventory.entries.slice(0, active.data.current.sortable.index),
+            ...newInventory.entries.slice(active.data.current.sortable.index + 1),
+          ],
+        };
+      } else {
+        newTiers = newTiers.map((tier, index) =>
+          index == active.data.current.containerId
+            ? {
+                ...tier,
+                entries: [
+                  ...tier.entries.slice(0, active.data.current.sortable.index),
+                  ...tier.entries.slice(active.data.current.sortable.index + 1),
+                ],
+              }
+            : tier
+        );
+      }
+
+      if (over.data.current.containerId == "inventory") {
+        newInventory = {
+          ...newInventory,
+          entries: over.data.current.sortable
+            ? [
+                ...newInventory.entries.slice(0, over.data.current.sortable.index),
+                active.data.current.entry,
+                ...newInventory.entries.slice(over.data.current.sortable.index),
+              ]
+            : [...newInventory.entries, active.data.current.entry],
+        };
+      } else {
+        console.log(over.data.current.containerId);
+        newTiers = newTiers.map((tier, index) =>
+          index == over.data.current.containerId
+            ? {
+                ...tier,
+                entries: over.data.current.sortable
+                  ? [
+                      ...tier.entries.slice(0, over.data.current.sortable.index),
+                      active.data.current.entry,
+                      ...tier.entries.slice(over.data.current.sortable.index),
+                    ]
+                  : [...tier.entries, active.data.current.entry],
+              }
+            : tier
+        );
+      }
+
+      setTierlistModel((prev) => ({ ...prev, inventory: newInventory, tiers: newTiers }));
+      console.log(tierListModel);
     }
-    if (over.data.type === DropTargetType.INVENTORY) {
-      const entry = active.data.current;
-      const newIndex = over.data.current.sortable.index;
-      const newInventory = arrayMove(
-        tierListModel.inventory.entries,
-        active.data.current.sortable.index,
-        newIndex
-      );
-      newInventory.entries.push(entry);
-      setTierlistModel({ ...tierListModel, inventory: newInventory });
-    }
+
     setActiveEntry(null);
   };
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <Box>
         <VStack>
-          <Tierlist
-            tierModels={tierListModel.tiers}
-            handleDragStart={() => {}}
-            handleDragOver={() => {}}
-            handleDrop={() => {}}
-          />
+          <Tierlist tierModels={tierListModel.tiers} />
           <HStack align="flex-start" minHeight="150px">
             <SelectRoot
               variant="subtle"
@@ -146,11 +180,7 @@ export const Dashboard = () => {
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  fetchListToInventory(
-                    username,
-                    tierListModel,
-                    setTierlistModel
-                  );
+                  fetchListToInventory(username, tierListModel, setTierlistModel);
                 }
               }}
             ></Input>
@@ -158,9 +188,7 @@ export const Dashboard = () => {
             <Button
               mt="25px"
               variant="subtle"
-              onClick={() =>
-                fetchListToInventory(username, tierListModel, setTierlistModel)
-              }
+              onClick={() => fetchListToInventory(username, tierListModel, setTierlistModel)}
             >
               get
             </Button>
@@ -170,9 +198,7 @@ export const Dashboard = () => {
       </Box>
 
       {createPortal(
-        <DragOverlay>
-          {activeEntry && <EntryPreview entry={activeEntry} />}
-        </DragOverlay>,
+        <DragOverlay>{activeEntry && <EntryPreview entry={activeEntry} />}</DragOverlay>,
         document.body
       )}
     </DndContext>
