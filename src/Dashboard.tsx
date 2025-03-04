@@ -63,7 +63,9 @@ export const Dashboard = () => {
             entries: arrayMove(
               prev.inventory.entries,
               active.data.current.sortable.index,
-              over.data.current.sortable.index
+              over.data.current.sortable
+                ? over.data.current.sortable.index
+                : prev.inventory.entries.length - 1
             ),
           },
         }));
@@ -78,7 +80,9 @@ export const Dashboard = () => {
                   entries: arrayMove(
                     tier.entries,
                     active.data.current.sortable.index,
-                    over.data.current.sortable.index
+                    over.data.current.sortable
+                      ? over.data.current.sortable.index
+                      : tier.entries.length - 1
                   ),
                 }
               : tier
