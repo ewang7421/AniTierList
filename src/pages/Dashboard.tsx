@@ -12,14 +12,14 @@ import {
   Input,
   Button,
 } from "@chakra-ui/react";
-import { getList } from "@/anilist.tsx";
+import { getList } from "@/api/anilist";
 import { useState } from "react";
-import { ListWebsite, TierListEntry, TierListModel } from "@/types.ts";
-import { Tierlist } from "@/Tierlist.tsx";
-import { Inventory } from "@/Inventory.tsx";
+import { ListWebsite, TierListEntry, TierListModel } from "@/types/types";
+import { Tierlist } from "@/components/Tierlist";
+import { Inventory } from "@/components/Inventory";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { EntryPreview } from "@/EntryPreview.tsx";
+import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
 
 export const Dashboard = () => {
@@ -202,7 +202,9 @@ export const Dashboard = () => {
       </Box>
 
       {createPortal(
-        <DragOverlay>{activeEntry && <EntryPreview entry={activeEntry} />}</DragOverlay>,
+        <DragOverlay>
+          {activeEntry && <EntryPreview entry={activeEntry} containerId={-1} />}
+        </DragOverlay>,
         document.body
       )}
     </DndContext>

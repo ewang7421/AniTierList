@@ -1,5 +1,5 @@
 import { Box } from "@chakra-ui/react";
-import { TierListEntry } from "./types";
+import { TierListEntry } from "@/types/types";
 
 interface EntryProps {
   entry: TierListEntry;

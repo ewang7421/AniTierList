@@ -1,7 +1,7 @@
 import { Text, Flex } from "@chakra-ui/react";
-import { TierModel } from "./types";
+import { TierModel } from "../types/types";
 import { SortableContext } from "@dnd-kit/sortable";
-import { Tier } from "@/Tier";
+import { Tier } from "@/components/Tier";
 
 interface TierlistProps {
   tierModels: TierModel[];

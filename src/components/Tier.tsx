@@ -1,7 +1,7 @@
 import { Flex, Center } from "@chakra-ui/react";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Entry } from "./Entry";
-import { TierModel } from "@/types";
+import { TierModel } from "@/types/types";
 import { useDroppable } from "@dnd-kit/core";
 
 interface TierProps {

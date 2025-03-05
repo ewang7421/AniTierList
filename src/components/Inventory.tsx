@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SortableContext } from "@dnd-kit/sortable";
-import { Entry } from "@/Entry";
-import { InventoryModel } from "./types";
+import { Entry } from "@/components/Entry";
+import { InventoryModel } from "../types/types";
 import { Button, Flex, SimpleGrid } from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
 
