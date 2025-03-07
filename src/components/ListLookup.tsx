@@ -29,6 +29,7 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
   const callbackWrapper = async () => {
     setUsername("");
     setSelectError(null);
+    setInputError(null);
 
     if (listWebsite.length < 1) {
       setSelectError("No Site Selected");
