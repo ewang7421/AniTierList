@@ -7,10 +7,7 @@ import {
   type User,
   ListWebsite,
   type OAuthFields,
-  type AccessTokenError,
-  type AccessTokenInfo,
 } from "@/types/types";
-import { createOAuthURI } from "./api";
 
 // Here we define our query as a multi-line string
 // Storing it in a separate .graphql/.gql file is also possible

@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { TierListEntry, ListWebsite, User } from "@/types/types";
+import { TierListEntry, ListWebsite, User, ListWebsiteDisplayNames } from "@/types/types";
 import { getAuthURL, getUserById, getList } from "@/api/api";
 import { useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
@@ -32,7 +32,6 @@ interface SaveToWebsiteModalProps {
 }
 export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [oldList, setOldList] = useState<TierListEntry[] | null>(null);
 
@@ -43,14 +42,12 @@ export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) 
 
     if (newAccessToken) {
       localStorage.setItem("access_token", newAccessToken);
-      window.history.replaceState({}, document.title, "/dashboard"); // Remove token from URL
+      window.history.replaceState({}, document.title, "/"); // Remove token from URL
     }
     const accessToken = window.localStorage.getItem("access_token");
 
     if (accessToken) {
       try {
-        const id = jwtDecode<{ sub: string }>(accessToken).sub;
-
         // Fetch user avatar asynchronously
         getAnilistAuthenticatedUser(accessToken)
           .then((user) => {
@@ -79,7 +76,9 @@ export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) 
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Save to Website</DialogTitle>
+          <DialogTitle>
+            Save to {isAuthenticated && user ? ListWebsiteDisplayNames[user.site] : "Website"}
+          </DialogTitle>
         </DialogHeader>
         <DialogBody>
           {isAuthenticated ? (
@@ -129,7 +128,9 @@ export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) 
           <DialogActionTrigger asChild>
             <Button variant="subtle">Cancel</Button>
           </DialogActionTrigger>
-          <Button variant="subtle">Save</Button>
+          <Button variant="subtle" onClick={() => console.log("hello")}>
+            Save
+          </Button>
         </DialogFooter>
         <DialogCloseTrigger />
       </DialogContent>

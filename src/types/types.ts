@@ -2,6 +2,10 @@ export enum ListWebsite {
   AniList = "anilist",
   MyAnimeList = "myanimelist",
 }
+export const ListWebsiteDisplayNames: Record<ListWebsite, string> = {
+  [ListWebsite.AniList]: "AniList",
+  [ListWebsite.MyAnimeList]: "MyAnimeList",
+};
 
 export const enum DroppableType {
   CONTAINER = "container",
