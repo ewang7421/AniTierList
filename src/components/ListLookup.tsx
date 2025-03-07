@@ -12,7 +12,7 @@ import {
   Button,
   Field,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ListLookupProps {
   setInventoryCallback: (site: ListWebsite, username: string) => Promise<void>;
@@ -20,7 +20,9 @@ interface ListLookupProps {
 
 export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
   const [username, setUsername] = useState("");
-  const [listWebsite, setListWebsite] = useState<string[]>([]);
+  const [listWebsite, setListWebsite] = useState<string[]>(
+    JSON.parse(window.localStorage.getItem("AniTierList:lookupDropdown:selected") || "[]")
+  );
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -38,12 +40,13 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
 
     if (listWebsite.length > 1) {
       setSelectError("Unexpected Select Error");
-      throw Error("Unexpected Select Error");
+      throw Error("Unexpected Select Error: more than one website selected");
     }
 
     const site = listWebsite[0] as ListWebsite;
     if (!Object.values(ListWebsite).includes(site)) {
-      throw Error("Unexpected select error");
+      setSelectError("Unexpected Select Error");
+      throw Error("Unexpected Select Error: Selected site is not a ListWebsite");
     }
     setIsLoading(true);
     try {
@@ -59,6 +62,10 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
       setIsLoading(false);
     }
   };
+  useEffect(() => {
+    window.localStorage.setItem("AniTierList:lookupDropdown:selected", JSON.stringify(listWebsite));
+  }, [listWebsite]);
+
   // TODO: In general check equality operators and make them all type strict (===)
   return (
     <HStack align="flex-start" minHeight="150px">
@@ -67,7 +74,9 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
           variant="subtle"
           collection={listWebsites}
           value={[listWebsite.toString()]}
-          onValueChange={(e) => setListWebsite(e.value)}
+          onValueChange={(e) => {
+            setListWebsite(e.value);
+          }}
           minWidth={"200px"}
           disabled={isLoading}
         >
