@@ -1,4 +1,4 @@
-export const enum ListWebsite {
+export enum ListWebsite {
   AniList = "anilist",
   MyAnimeList = "myanimelist",
 }

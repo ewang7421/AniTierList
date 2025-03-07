@@ -1,24 +1,7 @@
-import {
-  VStack,
-  Box,
-  createListCollection,
-  SelectContent,
-  SelectItem,
-  SelectLabel,
-  SelectRoot,
-  SelectTrigger,
-  SelectValueText,
-  HStack,
-  Input,
-  Button,
-  List,
-  Flex,
-  Avatar,
-  Text,
-} from "@chakra-ui/react";
+import { VStack, Box, createListCollection } from "@chakra-ui/react";
 import { getList } from "@/api/api";
 import { useState } from "react";
-import { ListWebsite, TierListEntry, TierListModel } from "@/types/types";
+import { ListWebsite, TierListEntry, TierListModel, TierModel } from "@/types/types";
 import { Tierlist } from "@/components/Tierlist";
 import { Inventory } from "@/components/Inventory";
 import { arrayMove } from "@dnd-kit/sortable";
@@ -41,6 +24,33 @@ export const Dashboard = () => {
     ],
   });
   const [activeEntry, setActiveEntry] = useState<TierListEntry | null>(null);
+
+  // TODO: have some warning telling user that we will reset the state of the tierlist
+  const setInventoryCallback = async (site: ListWebsite, username: string) => {
+    if (username.trim().length < 1) {
+      return;
+    }
+    if (tierListModel.tiers.some((tierModel) => tierModel.entries.length > 0)) {
+      console.log("send warning that tiers will be reset");
+    }
+    try {
+      const entries = await getList(site, username); // Set the state with the fetched data
+      // Set the tier list model's inventory to the fetched anime list
+
+      if (entries) {
+        setTierlistModel((prev) => ({
+          ...prev,
+          tiers: prev.tiers.map((prevTier: TierModel) => ({ ...prevTier, entries: [] })),
+          inventory: {
+            ...prev.inventory,
+            entries: entries,
+          },
+        }));
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
 
   const handleDragStart = (event) => {
     console.log("dragStart: ", event);
@@ -154,71 +164,16 @@ export const Dashboard = () => {
 
     setActiveEntry(null);
   };
+
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <Box>
         <VStack>
           <Tierlist tierModels={tierListModel.tiers} />
-          <HStack align="flex-start" minHeight="150px">
-            <SelectRoot
-              variant="subtle"
-              collection={listWebsites}
-              value={[listWebsite?.toString()]}
-              onValueChange={(e) => setListWebsite(e.value)}
-              minWidth={"175px"}
-            >
-              <SelectLabel>Choose Website</SelectLabel>
-              <SelectTrigger>
-                <SelectValueText placeholder="Select Website" />
-              </SelectTrigger>
-              <SelectContent>
-                {listWebsites.items.map((website) => (
-                  <SelectItem item={website} key={website.value}>
-                    {website.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </SelectRoot>
-
-            <Input
-              mt="25px"
-              minWidth={"300px"}
-              placeholder="search users"
-              variant="subtle"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  fetchListToInventory(
-                    listWebsite[0] as ListWebsite,
-                    username,
-                    tierListModel,
-                    setTierlistModel,
-                    setUsername
-                  );
-                }
-              }}
-            ></Input>
-
-            <Button
-              mt="25px"
-              variant="subtle"
-              onClick={() =>
-                fetchListToInventory(
-                  listWebsite[0] as ListWebsite,
-                  username,
-                  tierListModel,
-                  setTierlistModel,
-                  setUsername
-                )
-              }
-            >
-              get
-            </Button>
-          </HStack>
-          <Inventory inventory={tierListModel.inventory} />
+          <Inventory
+            inventory={tierListModel.inventory}
+            setInventoryCallback={setInventoryCallback}
+          />
         </VStack>
       </Box>
 
@@ -237,33 +192,3 @@ const listWebsites = createListCollection({
     { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
   ],
 });
-
-// TODO: have some warning telling user that we will reset the state of the tierlist
-const fetchListToInventory = async (
-  site: ListWebsite,
-  username: string,
-  tierListModel: TierListModel,
-  setTierlistModelCallback: (tierListModel: TierListModel) => void,
-  setInputCallback: (inputValue: string) => void
-) => {
-  setInputCallback("");
-  if (username.trim().length < 1) {
-    return;
-  }
-  try {
-    const entries = await getList(site, username); // Set the state with the fetched data
-    // Set the tier list model's inventory to the fetched anime list
-
-    if (entries) {
-      setTierlistModelCallback({
-        ...tierListModel,
-        inventory: {
-          ...tierListModel.inventory,
-          entries: entries,
-        },
-      });
-    }
-  } catch (error) {
-    console.error("Error fetching anime list:", error);
-  }
-};

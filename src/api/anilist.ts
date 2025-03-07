@@ -48,7 +48,7 @@ query ($userName: String) { # Define which variables will be used in the query (
   const variables = {
     userName: username,
   };
-  return getAnilistData<TierListEntry[]>(query, variables, handleListData);
+  return getAnilistData<TierListEntry[]>(query, variables, handleListResponse, handleListData);
 }
 
 export async function getAnilistUserByUsername(username: string): Promise<User | null> {
@@ -66,7 +66,7 @@ query ($userName: String) {
     userName: username,
   };
 
-  return getAnilistData<User | null>(query, variables, handleUserData);
+  return getAnilistData<User | null>(query, variables, handleUserResponse, handleUserData);
 }
 
 export async function getAnilistUserById(id: number): Promise<User | null> {
@@ -84,7 +84,7 @@ query ($userId: Int) {
     userId: id,
   };
 
-  return getAnilistData<User | null>(query, variables, handleUserData);
+  return getAnilistData<User | null>(query, variables, handleResponse, handleUserData);
 }
 
 //TODO: refactor this or consider refactoring entire getAnilistData thing
@@ -118,6 +118,20 @@ export async function getAnilistAuthenticatedUser(accessToken: string): Promise<
 async function handleResponse(response: Response) {
   const json = await response.json();
   return response.ok ? json : Promise.reject(json);
+}
+
+async function handleUserResponse(response: Response) {
+  const json = await response.json();
+  return response.ok ? json : Promise.reject(Error("User '' not found"));
+}
+
+async function handleListResponse(response: Response) {
+  const json = await response.json();
+  if (response.ok) {
+    return json;
+  } else if (response.status === 404) {
+    return Promise.reject(Error("User not found"));
+  }
 }
 
 function handleViewerData(data): User | null {
@@ -186,12 +200,14 @@ function handleListData(data: AniListResponse): TierListEntry[] {
 
 function handleError(error: unknown): void {
   //alert("Error, check console");
-  console.error(error);
+  //console.error(error);
+  throw error;
 }
 
 async function getAnilistData<T>(
   query: string,
   variables: Object,
+  handleResponse: (response: Response) => Promise<T>,
   handleData: (data: any) => T
 ): Promise<T> {
   const url = "https://graphql.anilist.co",
