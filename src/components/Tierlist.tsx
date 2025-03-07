@@ -1,7 +1,8 @@
-import { Text, Flex } from "@chakra-ui/react";
-import { TierModel } from "../types/types";
+import { Text, Flex, Button, HStack } from "@chakra-ui/react";
+import { TierListEntry, TierModel } from "../types/types";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Tier } from "@/components/Tier";
+import { SaveToWebsiteModal } from "@/components/SaveToWebsiteModal";
 
 interface TierlistProps {
   tierModels: TierModel[];
@@ -17,6 +18,16 @@ export const Tierlist = ({ tierModels }: TierlistProps) => {
             <Tier tierModel={model} index={index} />
           </SortableContext>
         ))}
+      <HStack alignSelf={"center"}>
+        <SaveToWebsiteModal
+          changedEntries={tierModels.map((model) => tierModelToChanged(model)).flat()}
+        />
+        <Button variant="subtle">Download</Button>
+      </HStack>
     </Flex>
   );
 };
+
+function tierModelToChanged(tierModel: TierModel): { entry: TierListEntry; rating: number }[] {
+  return tierModel.entries.map((entry) => ({ entry: entry, rating: tierModel.maxScore }));
+}
