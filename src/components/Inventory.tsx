@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Entry } from "@/components/Entry";
 import { InventoryModel } from "../types/types";
-import { Button, Flex, SimpleGrid } from "@chakra-ui/react";
+import { Button, Flex, HStack, SimpleGrid } from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
+import {
+  PaginationItems,
+  PaginationNextTrigger,
+  PaginationPageText,
+  PaginationPrevTrigger,
+  PaginationRoot,
+} from "@/components/ui/pagination";
 
 interface InventoryProps {
   inventory: InventoryModel;
@@ -12,44 +19,45 @@ interface InventoryProps {
 export const Inventory = ({ inventory }: InventoryProps) => {
   const columnCount = 10; // Number of columns
   const rowsPerPage = 5; // Number of rows visible at a time
-  const itemsPerPage = columnCount * rowsPerPage; // Total visible items per page
-  const pageCount = Math.ceil(inventory.entries.length / itemsPerPage);
+  const pageSize = columnCount * rowsPerPage; // Total visible items per page
 
-  const [page, setPage] = useState(0); // Current page index
+  const [page, setPage] = useState(1); // Current page index
+
+  const startRange = (page - 1) * pageSize;
+  const endRange = startRange + pageSize;
+
+  const visibleEntries = inventory.entries.slice(startRange, endRange);
 
   // Get the current page slice
-  const visibleEntries = inventory.entries.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
   const { setNodeRef } = useDroppable({
     id: "inventory",
     data: { containerId: "inventory" },
   });
+
+  // consider resetting page to 1 if a new inventory is loaded,
+  // maybe move all the inventory fetching stuff in here so it's easier to work with
+  useEffect(() => {
+    setPage(Math.min(page, Math.ceil(inventory.entries.length / pageSize)));
+  }, [inventory]);
   return (
     <SortableContext items={inventory.entries}>
       <Flex direction="column" align="center">
-        {/* Inventory Grid */}
-        <SimpleGrid columns={columnCount} ref={setNodeRef}>
+        <SimpleGrid columns={columnCount} ref={setNodeRef} minHeight={"50vh"}>
           {visibleEntries.map((entry) => (
             <Entry key={entry.id} entry={entry} containerId={"inventory"} />
           ))}
         </SimpleGrid>
-
-        {/* Navigation Buttons */}
-        <Flex mt={2} gap={2}>
-          <Button
-            variant="subtle"
-            onClick={() => setPage((prev) => prev - 1)}
-            disabled={page === 0}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="subtle"
-            onClick={() => setPage((prev) => prev + 1)}
-            disabled={page >= pageCount - 1}
-          >
-            Next
-          </Button>
-        </Flex>
+        <PaginationRoot
+          count={inventory.entries.length}
+          pageSize={pageSize}
+          onPageChange={(e) => setPage(e.page)}
+        >
+          <HStack>
+            <PaginationPrevTrigger />
+            <PaginationItems />
+            <PaginationNextTrigger />
+          </HStack>
+        </PaginationRoot>
       </Flex>
     </SortableContext>
   );
