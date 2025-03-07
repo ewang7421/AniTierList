@@ -11,8 +11,12 @@ import {
   HStack,
   Input,
   Button,
+  List,
+  Flex,
+  Avatar,
+  Text,
 } from "@chakra-ui/react";
-import { getList } from "@/api/anilist";
+import { getList } from "@/api/api";
 import { useState } from "react";
 import { ListWebsite, TierListEntry, TierListModel } from "@/types/types";
 import { Tierlist } from "@/components/Tierlist";
@@ -161,6 +165,7 @@ export const Dashboard = () => {
               collection={listWebsites}
               value={[listWebsite?.toString()]}
               onValueChange={(e) => setListWebsite(e.value)}
+              minWidth={"175px"}
             >
               <SelectLabel>Choose Website</SelectLabel>
               <SelectTrigger>
@@ -177,14 +182,22 @@ export const Dashboard = () => {
 
             <Input
               mt="25px"
-              placeholder="username"
+              minWidth={"300px"}
+              placeholder="search users"
               variant="subtle"
+              value={username}
               onChange={(e) => {
                 setUsername(e.target.value);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  fetchListToInventory(username, tierListModel, setTierlistModel);
+                  fetchListToInventory(
+                    listWebsite[0] as ListWebsite,
+                    username,
+                    tierListModel,
+                    setTierlistModel,
+                    setUsername
+                  );
                 }
               }}
             ></Input>
@@ -192,7 +205,15 @@ export const Dashboard = () => {
             <Button
               mt="25px"
               variant="subtle"
-              onClick={() => fetchListToInventory(username, tierListModel, setTierlistModel)}
+              onClick={() =>
+                fetchListToInventory(
+                  listWebsite[0] as ListWebsite,
+                  username,
+                  tierListModel,
+                  setTierlistModel,
+                  setUsername
+                )
+              }
             >
               get
             </Button>
@@ -216,19 +237,32 @@ const listWebsites = createListCollection({
     { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
   ],
 });
+
+// TODO: have some warning telling user that we will reset the state of the tierlist
 const fetchListToInventory = async (
+  site: ListWebsite,
   username: string,
   tierListModel: TierListModel,
-  setTierlistModelCallback: (tierListModel: TierListModel) => void
+  setTierlistModelCallback: (tierListModel: TierListModel) => void,
+  setInputCallback: (inputValue: string) => void
 ) => {
+  setInputCallback("");
+  if (username.trim().length < 1) {
+    return;
+  }
   try {
-    const entries = await getList(username); // Set the state with the fetched data
+    const entries = await getList(site, username); // Set the state with the fetched data
     // Set the tier list model's inventory to the fetched anime list
-    const newInventory = {
-      ...tierListModel.inventory,
-      entries: entries,
-    };
-    setTierlistModelCallback({ ...tierListModel, inventory: newInventory });
+
+    if (entries) {
+      setTierlistModelCallback({
+        ...tierListModel,
+        inventory: {
+          ...tierListModel.inventory,
+          entries: entries,
+        },
+      });
+    }
   } catch (error) {
     console.error("Error fetching anime list:", error);
   }
