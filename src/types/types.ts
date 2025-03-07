@@ -78,3 +78,48 @@ export interface AniListResponse {
     MediaListCollection: MediaListCollection;
   };
 }
+
+export interface AnilistUserResponse {
+  errors?: AnilistError[];
+  data: {
+    User: {
+      name: string;
+      avatar: {
+        medium: string;
+      };
+    } | null;
+  };
+}
+
+interface AnilistError {
+  message: string;
+  status: string;
+  //locations: [];
+}
+
+// TODO: probably should add id here
+export interface User {
+  name: string;
+  avatar: string;
+  site: ListWebsite;
+}
+
+export interface AccessTokenInfo {
+  token_type: "Bearer";
+  expires_in: number;
+  access_token: string;
+  refresh_token: string;
+}
+
+export interface AccessTokenError {
+  error: string;
+  message: string;
+  hint: string;
+}
+
+export interface OAuthFields {
+  clientId?: string | number;
+  clientSecret?: string;
+  redirectUri?: string;
+  responseType?: "token" | "code";
+}
