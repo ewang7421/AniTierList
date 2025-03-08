@@ -20,23 +20,37 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { TierListEntry, ListWebsite, User, ListWebsiteDisplayNames } from "@/types/types";
-import { getAuthURL, getUserById, getList } from "@/api/api";
+import {
+  TierListEntry,
+  ListWebsite,
+  User,
+  ListWebsiteDisplayNames,
+  TierModel,
+} from "@/types/types";
+import { getAuthURL, getList, saveEntries } from "@/api/api";
 import { useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
 import { useState } from "react";
 import { getAnilistAuthenticatedUser } from "@/api/anilist";
 
 interface SaveToWebsiteModalProps {
-  changedEntries: { entry: TierListEntry; rating: number }[];
+  tiers: TierModel[];
 }
-export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) => {
+export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
+  const [open, setOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [oldList, setOldList] = useState<TierListEntry[] | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Handle OAuth token in URL
+    // TODO: potentially remove this open check and open from dependency array because
+    // it's rlly bad in strictmode.
+    // but also make sure to not update this every time you open and close the modal?
+    // idk it's pretty horrible perf wise but justifiable to some degree?
+    if (!open) {
+      return;
+    }
+    // OAuth token in URL
     const params = new URLSearchParams(window.location.hash.substring(1));
     const newAccessToken = params.get("access_token");
 
@@ -65,10 +79,10 @@ export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) 
         console.error("Invalid token:", error);
       }
     }
-  }, []);
+  }, [open]);
 
   return (
-    <DialogRoot>
+    <DialogRoot lazyMount open={open} onOpenChange={(e) => setOpen(e.open)}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           Save
@@ -94,16 +108,19 @@ export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) 
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
-                  {/* check react-table for sorted tables =, also consider having a toggle/radio to show/hide unchanged entries*/}
-                  {changedEntries.map((changed) => {
-                    const oldEntry = oldList?.find((oldEntry) => oldEntry.id === changed.entry.id);
-                    return (
-                      <Table.Row key={changed.entry.id}>
-                        <Table.Cell>{changed.entry.title}</Table.Cell>
-                        <Table.Cell textAlign="end">{oldEntry ? oldEntry.score : ""}</Table.Cell>
-                        <Table.Cell textAlign="end">{changed.rating}</Table.Cell>
-                      </Table.Row>
-                    );
+                  {tiers.map((tier) => {
+                    return tier.entries.map((changedEntry) => {
+                      // Find the corresponding old entry
+                      const oldEntry = oldList?.find((oldEntry) => oldEntry.id === changedEntry.id);
+
+                      return (
+                        <Table.Row key={changedEntry.id}>
+                          <Table.Cell>{changedEntry.title}</Table.Cell>
+                          <Table.Cell textAlign="end">{oldEntry ? oldEntry.score : ""}</Table.Cell>
+                          <Table.Cell textAlign="end">{tier.maxScore}</Table.Cell>
+                        </Table.Row>
+                      );
+                    });
                   })}
                 </Table.Body>
               </Table.Root>
@@ -128,7 +145,23 @@ export const SaveToWebsiteModal = ({ changedEntries }: SaveToWebsiteModalProps) 
           <DialogActionTrigger asChild>
             <Button variant="subtle">Cancel</Button>
           </DialogActionTrigger>
-          <Button variant="subtle" onClick={() => console.log("hello")}>
+          <Button
+            variant="subtle"
+            onClick={() => {
+              const accessToken = window.localStorage.getItem("access_token");
+              if (user && accessToken) {
+                try {
+                  setIsSaving(true);
+                  saveEntries(user.site, tiers, accessToken);
+                } catch (error) {
+                  throw error;
+                } finally {
+                  setIsSaving(false);
+                }
+              }
+            }}
+            loading={isSaving}
+          >
             Save
           </Button>
         </DialogFooter>

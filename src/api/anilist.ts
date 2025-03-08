@@ -24,6 +24,7 @@ query ($userName: String) { # Define which variables will be used in the query (
       status
       isCustomList
       entries {
+        id
         score(format: POINT_10_DECIMAL)
         media {
           id
@@ -112,6 +113,56 @@ export async function getAnilistAuthenticatedUser(accessToken: string): Promise<
   return fetch(url, options).then(handleResponse, handleError).then(handleViewerData);
 }
 
+//TODO: probably refactor access token to a getAccessToken function rather than passing it
+// guaranteed to have at least 1 entry
+export async function saveAnilistEntries(
+  changedEntries: TierListEntry[],
+  newScore: number,
+  accessToken: string
+): Promise<void> {
+  const query = `
+mutation UpdateMediaListEntries($score: Float, $ids: [Int]) {
+  UpdateMediaListEntries(score: $score, ids: $ids) {
+    updatedAt
+  }
+}
+`;
+  const variables = {
+    score: newScore,
+    ids: changedEntries.map((entry) => entry.entryId),
+  };
+
+  const url = "https://graphql.anilist.co",
+    options = {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + accessToken,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        query: query,
+        variables: variables,
+      }),
+    };
+  try {
+    const response = await fetch(url, options);
+    await handleMutationResponse(response);
+    return;
+  } catch (error) {
+    handleError(error);
+    return;
+  }
+}
+
+async function handleMutationResponse(response: Response) {
+  if (response.ok) {
+    return;
+  } else {
+    return Promise.reject(Error("error while saving"));
+  }
+}
+
 async function handleResponse(response: Response) {
   const json = await response.json();
   return response.ok ? json : Promise.reject(json);
@@ -181,6 +232,7 @@ function handleListData(data: AniListResponse): TierListEntry[] {
     score: entry.score,
     tier: 0,
     isPreview: false,
+    entryId: entry.id,
   }));
 
   /*

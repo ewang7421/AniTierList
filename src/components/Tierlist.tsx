@@ -19,9 +19,7 @@ export const Tierlist = ({ tierModels }: TierlistProps) => {
           </SortableContext>
         ))}
       <HStack alignSelf={"center"}>
-        <SaveToWebsiteModal
-          changedEntries={tierModels.map((model) => tierModelToChanged(model)).flat()}
-        />
+        <SaveToWebsiteModal tiers={tierModels} />
         <Button variant="subtle">Download</Button>
       </HStack>
     </Flex>

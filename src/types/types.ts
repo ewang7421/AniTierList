@@ -21,6 +21,9 @@ export type TierListEntry = {
   imageUrl: string;
   score: number;
   tier: number;
+
+  //anilist entry id, probably should be refactored
+  entryId: number;
 };
 // Represents a single tier in the tierlist
 export type TierModel = {
@@ -62,6 +65,7 @@ export interface Media {
 export interface Entry {
   score: number;
   media: Media;
+  id: number;
 }
 
 export interface List {

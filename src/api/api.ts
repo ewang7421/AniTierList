@@ -3,8 +3,9 @@ import {
   getAnilistUserById,
   getAnilistUserByUsername,
   AnilistOAuthFields,
+  saveAnilistEntries,
 } from "@/api/anilist";
-import { ListWebsite, TierListEntry, User, OAuthFields } from "@/types/types";
+import { ListWebsite, TierListEntry, User, OAuthFields, TierModel } from "@/types/types";
 
 export async function getList(site: ListWebsite, username: string): Promise<TierListEntry[]> {
   try {
@@ -87,4 +88,30 @@ export function createOAuthURI(baseURL: string, options: OAuthFields): string {
   url.searchParams.set("response_type", options.responseType);
 
   return url.toString();
+}
+
+export function saveEntries(
+  site: ListWebsite,
+  // while we currently have score as a number, considering making a type for it since anilist supports many different scoring systems.
+  // Also, this changedEntries structure might be bad, consider changing it to just be stored in the tierlistentyr type (this pattern exists in other areas of the codebsae)
+  tiers: TierModel[],
+  accessToken: string
+): Promise<void> {
+  try {
+    if (site === ListWebsite.AniList) {
+      for (let i = 0; i < tiers.length; i++) {
+        // do you do this empty list check here? or in saveAnilistEntries
+        if (tiers[i].entries.length < 1) {
+          continue;
+        }
+        saveAnilistEntries(tiers[i].entries, tiers[i].maxScore, accessToken);
+      }
+      return Promise.resolve();
+    } else {
+      throw new Error("Unsupported platform");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    throw error;
+  }
 }
