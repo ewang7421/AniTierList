@@ -15,16 +15,17 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
 
-const currentUser: User | null = JSON.parse(
-  window.localStorage.getItem("AniTierList:Dashboard:user") || "null"
+const cachedLoadedUser: User | null = JSON.parse(
+  window.localStorage.getItem("AniTierList:Dashboard:loadedUser") || "null"
 ) as User | null;
 
 const cachedTierListModel: TierListModel | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:TierListModel") || "null"
 ) as TierListModel | null;
+
 // when getting from localstorage, put a last updated and a force update on lists (maybe even rate limit the force update)
 export const Dashboard = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loadedUser, setLoadedUser] = useState<User | null>(cachedLoadedUser);
   const [tierListModel, setTierlistModel] = useState<TierListModel>(
     cachedTierListModel || {
       inventory: { entries: [] },
@@ -40,11 +41,8 @@ export const Dashboard = () => {
   );
   const [activeEntry, setActiveEntry] = useState<TierListEntry | null>(null);
 
-  console.log(cachedTierListModel);
-  console.log(tierListModel);
-
   // TODO: have some warning telling user that we will reset the state of the tierlist
-  const setInventoryCallback = async (site: ListWebsite, username: string) => {
+  const fetchUserList = async (site: ListWebsite, username: string) => {
     if (username.trim().length < 2) {
       throw Error("Username must be at least 2 characters");
     }
@@ -52,10 +50,10 @@ export const Dashboard = () => {
       console.log("send warning that tiers will be reset");
     }
     try {
-      const entries = await getList(site, username); // Set the state with the fetched data
+      const { completedList, user } = await getList(site, username); // Set the state with the fetched data
       // Set the tier list model's inventory to the fetched anime list
 
-      if (entries) {
+      if (completedList) {
         setTierlistModel((prev) => ({
           ...prev,
           tiers: prev.tiers.map((prevTier: TierModel) => ({
@@ -64,13 +62,77 @@ export const Dashboard = () => {
           })),
           inventory: {
             ...prev.inventory,
-            entries: entries,
+            entries: completedList,
           },
         }));
       }
+
+      if (user) {
+        setLoadedUser(user);
+      }
     } catch (error) {
+      //TODO: this console error is only to prevent eslint error
+      console.error(error);
       throw error;
     }
+  };
+
+  const syncTierList = (newEntries: TierListEntry[]): TierListModel => {
+    // Step 1: Convert cached list to a Map for O(1) lookups
+    const currentEntries = [
+      ...tierListModel.inventory.entries.map((entry) => ({
+        entry: entry,
+        index: "inventory",
+      })),
+      ...tierListModel.tiers.map((tier, index) =>
+        tier.entries.map((entry) => ({
+          entry: entry,
+          index: index,
+        }))
+      ),
+    ].flat();
+    const cachedMap = new Map(
+      currentEntries.map((flattenedEntry) => [
+        flattenedEntry.entry.id,
+        { entry: flattenedEntry.entry, index: flattenedEntry.index },
+      ])
+    );
+
+    // Step 2: Track new and existing items
+    const updatedMap = new Map(newEntries.map((entry) => [entry.id, entry]));
+
+    // Step 3: Add new items from updatedList
+    for (const [id, newEntry] of updatedMap) {
+      cachedMap.set(id, { entry: newEntry, index: "inventory" }); // Adds if not present
+    }
+
+    // Step 4: Remove items that are no longer in updatedList
+    for (const id of cachedMap.keys()) {
+      if (!updatedMap.has(id)) {
+        cachedMap.delete(id);
+      }
+    }
+
+    // Step 5: Convert Map back to an array for sorting
+    const newInventory = Array.from(cachedMap.values())
+      .filter((entryData) => entryData.index === "inventory")
+      .map((entryData) => entryData.entry);
+    const newTiers = tierListModel.tiers.map((tier, index) => {
+      const tierEntries = Array.from(cachedMap.values())
+        .filter((entryData) => entryData.index === index)
+        .map((entryData) => entryData.entry);
+      return {
+        ...tier,
+        entries: tierEntries,
+      };
+    });
+
+    // Return the sorted list to render
+    return {
+      ...tierListModel,
+      inventory: { entries: newInventory },
+      tiers: newTiers,
+    };
   };
 
   const handleDragStart = (event) => {
@@ -207,6 +269,12 @@ export const Dashboard = () => {
       JSON.stringify(tierListModel)
     );
   }, [tierListModel]);
+  useEffect(() => {
+    window.localStorage.setItem(
+      "AniTierList:Dashboard:loadedUser",
+      JSON.stringify(loadedUser)
+    );
+  }, [loadedUser]);
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <Box>
@@ -214,7 +282,8 @@ export const Dashboard = () => {
           <Tierlist tierModels={tierListModel.tiers} />
           <Inventory
             inventory={tierListModel.inventory}
-            setInventoryCallback={setInventoryCallback}
+            user={loadedUser}
+            fetchListWrapper={fetchUserList}
           />
         </VStack>
       </Box>
