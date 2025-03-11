@@ -16,7 +16,9 @@ import {
 // TODO: probabyly forceSingleCompleted in the query, the only argument
 // against that would be to allow users to sort by their custom completed
 // scheme (idk how it works, i think by format like tv, etc)
-export async function getAnilistEntries(username: string): Promise<TierListEntry[]> {
+export async function getAnilistEntries(
+  username: string
+): Promise<{ completedList: TierListEntry[]; user: User }> {
   const query = `
 query ($userName: String, $type: MediaType, $status: MediaListStatus) { # Define which variables will be used in the query (id)
   MediaListCollection (userName: $userName, type: $type, status: $status) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
@@ -55,10 +57,17 @@ query ($userName: String, $type: MediaType, $status: MediaListStatus) { # Define
     type: "ANIME",
     status: "COMPLETED",
   };
-  return getAnilistData<TierListEntry[]>(query, variables, handleListResponse, handleListData);
+  return getAnilistData<{ completedList: TierListEntry[]; user: User }>(
+    query,
+    variables,
+    handleListResponse,
+    handleListData
+  );
 }
 
-export async function getAnilistUserByUsername(username: string): Promise<User | null> {
+export async function getAnilistUserByUsername(
+  username: string
+): Promise<User | null> {
   const query = `
 query ($userName: String) {
   User(search: $userName) {
@@ -73,29 +82,18 @@ query ($userName: String) {
     userName: username,
   };
 
-  return getAnilistData<User | null>(query, variables, handleUserResponse, handleUserData);
-}
-
-export async function getAnilistUserById(id: number): Promise<User | null> {
-  const query = `
-query ($userId: Int) {
-  User(id: $userId) {
-    name
-    avatar {
-      medium
-    }
-  }
-}
-`;
-  const variables = {
-    userId: id,
-  };
-
-  return getAnilistData<User | null>(query, variables, handleResponse, handleUserData);
+  return getAnilistData<User | null>(
+    query,
+    variables,
+    handleUserResponse,
+    handleUserData
+  );
 }
 
 //TODO: refactor this or consider refactoring entire getAnilistData thing
-export async function getAnilistAuthenticatedUser(accessToken: string): Promise<User | null> {
+export async function getAnilistAuthenticatedUser(
+  accessToken: string
+): Promise<User | null> {
   const query = `
 {
   Viewer {
@@ -119,7 +117,9 @@ export async function getAnilistAuthenticatedUser(accessToken: string): Promise<
         query: query,
       }),
     };
-  return fetch(url, options).then(handleResponse, handleError).then(handleViewerData);
+  return fetch(url, options)
+    .then(handleResponse, handleError)
+    .then(handleViewerData);
 }
 
 //TODO: probably refactor access token to a getAccessToken function rather than passing it
@@ -191,7 +191,7 @@ async function handleListResponse(response: Response) {
   }
 }
 
-function handleViewerData(data): User | null {
+function handleViewerData(data: any): User | null {
   console.log(data);
 
   if (data.errors) {
@@ -226,34 +226,44 @@ function handleUserData(data: AnilistUserResponse): User | null {
   return null;
 }
 
-function handleListData(data: AniListResponse): TierListEntry[] {
-  console.log(data);
-  const completedList = data.data.MediaListCollection.lists.filter(
-    (list: List) => !list.isCustomList && list.status === "COMPLETED"
-  )[0];
-  console.log(completedList);
-
-  const entries: TierListEntry[] = completedList.entries.map((entry: Entry) => ({
-    id: entry.media.id,
-    idMal: entry.media.idMal,
-    title: entry.media.title.romaji,
-    imageUrl: entry.media.coverImage.large,
-    score: entry.score,
-    tier: 0,
-    isPreview: false,
-    entryId: entry.id,
-  }));
-
-  /*
+/*
   console.assert(
     data.data.MediaListCollection.lists.filter(
       (list: any) => !list.isCustomList && list.status === "COMPLETED"
     ).length === 1,
     "There can only be one completed list"
   ); */
-  // let ret = { userId: data.data.MediaListCollection.user.id, entries: entries };
+// let ret = { userId: data.data.MediaListCollection.user.id, entries: entries };
+function handleListData(data: AniListResponse): {
+  completedList: TierListEntry[];
+  user: User;
+} {
+  console.log(data);
+  const completedList = data.data.MediaListCollection.lists.filter(
+    (list: List) => !list.isCustomList && list.status === "COMPLETED"
+  )[0];
+  console.log(completedList);
 
-  return entries;
+  const entries: TierListEntry[] = completedList.entries.map(
+    (entry: Entry) => ({
+      id: entry.media.id,
+      idMal: entry.media.idMal,
+      title: entry.media.title.romaji,
+      imageUrl: entry.media.coverImage.large,
+      score: entry.score,
+      tier: 0,
+      isPreview: false,
+      entryId: entry.id,
+    })
+  );
+
+  const user: User = {
+    name: data.data.MediaListCollection.user.name,
+    avatar: data.data.MediaListCollection.user.avatar.medium,
+    site: ListWebsite.AniList,
+  };
+
+  return { completedList: entries, user: user };
 }
 
 function handleError(error: unknown): void {
@@ -264,7 +274,7 @@ function handleError(error: unknown): void {
 
 async function getAnilistData<T>(
   query: string,
-  variables: Object,
+  variables: object,
   handleResponse: (response: Response) => Promise<T>,
   handleData: (data: any) => T
 ): Promise<T> {

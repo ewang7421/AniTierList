@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Entry } from "@/components/Entry";
-import { InventoryModel, ListWebsite } from "../types/types";
+import { InventoryModel, ListWebsite, User } from "../types/types";
 import { Flex, HStack, SimpleGrid, VStack } from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -14,12 +14,16 @@ import { ListLookup } from "@/components/ListLookup";
 
 interface InventoryProps {
   inventory: InventoryModel;
-  setInventoryCallback: (site: ListWebsite, username: string) => Promise<void>;
+  user: User | null;
+  loadListCallback: (site: ListWebsite, username: string) => Promise<void>;
+  syncListCallback: () => void;
 }
 
 export const Inventory = ({
   inventory,
-  setInventoryCallback,
+  user,
+  loadListCallback,
+  syncListCallback,
 }: InventoryProps) => {
   const columnCount = 10;
   const rowsPerPage = 5;
@@ -50,7 +54,11 @@ export const Inventory = ({
   }, [inventory, page, pageSize]);
   return (
     <VStack>
-      <ListLookup setInventoryCallback={setInventoryCallback} />
+      <ListLookup
+        user={user}
+        loadListCallback={loadListCallback}
+        syncListCallback={syncListCallback}
+      />
       <SortableContext items={inventory.entries}>
         <Flex direction="column" align="center">
           <SimpleGrid columns={columnCount} ref={setNodeRef} minHeight={"50vh"}>

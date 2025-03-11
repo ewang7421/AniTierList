@@ -11,14 +11,26 @@ import {
   Input,
   Button,
   Field,
+  VStack,
+  Image,
+  Heading,
+  Flex,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
+import { User } from "@/types/types";
+import { getLogoURL } from "@/api/api";
 //TODO: allow user to authenticate to get lists because of private entries
 interface ListLookupProps {
-  setInventoryCallback: (site: ListWebsite, username: string) => Promise<void>;
+  user: User | null;
+  loadListCallback: (site: ListWebsite, username: string) => Promise<void>;
+  syncListCallback: () => void;
 }
 
-export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
+export const ListLookup = ({
+  user,
+  loadListCallback,
+  syncListCallback,
+}: ListLookupProps) => {
   const [username, setUsername] = useState("");
   const [listWebsite, setListWebsite] = useState<string[]>(
     JSON.parse(
@@ -30,7 +42,7 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // wrapper because select's event represents a list of selected items, not a singular one
-  const callbackWrapper = async () => {
+  const fetchListWrapper = async () => {
     setUsername("");
     setSelectError(null);
     setInputError(null);
@@ -54,7 +66,7 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
     }
     setIsLoading(true);
     try {
-      await setInventoryCallback(site, username);
+      await loadListCallback(site, username);
     } catch (error) {
       if (error instanceof Error) {
         console.log(error.message);
@@ -75,66 +87,93 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
 
   // TODO: In general check equality operators and make them all type strict (===)
   return (
-    <HStack align="flex-start" minHeight="150px">
-      <Field.Root invalid={selectError !== null}>
-        <SelectRoot
+    <VStack width={"100%"}>
+      <HStack align="flex-start" minHeight="150px">
+        <Field.Root invalid={selectError !== null}>
+          <SelectRoot
+            variant="subtle"
+            collection={listWebsites}
+            value={[listWebsite.toString()]}
+            onValueChange={(e) => {
+              setListWebsite(e.value);
+            }}
+            minWidth={"200px"}
+            disabled={isLoading}
+          >
+            <SelectLabel>Website</SelectLabel>
+            <SelectTrigger>
+              <SelectValueText placeholder="Choose Website" />
+            </SelectTrigger>
+            <SelectContent>
+              {listWebsites.items.map((website) => (
+                <SelectItem item={website} key={website.value}>
+                  {website.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </SelectRoot>
+          <Field.ErrorText>{selectError}</Field.ErrorText>
+        </Field.Root>
+        <Field.Root invalid={inputError !== null}>
+          <Field.Label></Field.Label>
+
+          {/*TODO: fix this styling */}
+          <Input
+            mt={"20px"}
+            minWidth={"300px"}
+            placeholder="Enter your username"
+            variant="subtle"
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+            }}
+            onKeyDown={async (e) => {
+              if (e.key === "Enter") {
+                fetchListWrapper();
+              }
+            }}
+            autoComplete={"off"}
+            disabled={isLoading}
+          ></Input>
+          <Field.HelperText />
+          <Field.ErrorText>{inputError}</Field.ErrorText>
+        </Field.Root>
+
+        <Button
+          mt="25px"
           variant="subtle"
-          collection={listWebsites}
-          value={[listWebsite.toString()]}
-          onValueChange={(e) => {
-            setListWebsite(e.value);
-          }}
-          minWidth={"200px"}
-          disabled={isLoading}
+          onClick={fetchListWrapper}
+          loading={isLoading}
         >
-          <SelectLabel>Website</SelectLabel>
-          <SelectTrigger>
-            <SelectValueText placeholder="Choose Website" />
-          </SelectTrigger>
-          <SelectContent>
-            {listWebsites.items.map((website) => (
-              <SelectItem item={website} key={website.value}>
-                {website.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </SelectRoot>
-        <Field.ErrorText>{selectError}</Field.ErrorText>
-      </Field.Root>
-      <Field.Root invalid={inputError !== null}>
-        <Field.Label></Field.Label>
-
-        {/*TODO: fix this styling */}
-        <Input
-          mt={"20px"}
-          minWidth={"300px"}
-          placeholder="Enter your username"
-          variant="subtle"
-          value={username}
-          onChange={(e) => {
-            setUsername(e.target.value);
-          }}
-          onKeyDown={async (e) => {
-            if (e.key === "Enter") {
-              callbackWrapper();
-            }
-          }}
-          autoComplete={"off"}
-          disabled={isLoading}
-        ></Input>
-        <Field.HelperText />
-        <Field.ErrorText>{inputError}</Field.ErrorText>
-      </Field.Root>
-
-      <Button
-        mt="25px"
-        variant="subtle"
-        onClick={callbackWrapper}
-        loading={isLoading}
-      >
-        get
-      </Button>
-    </HStack>
+          get
+        </Button>
+      </HStack>
+      {user && (
+        <Flex
+          width="100%"
+          direction="row"
+          justify="center"
+          align="center"
+          position="relative"
+          gap={4}
+        >
+          <Image src={user.avatar} width={"50px"} height={"50px"} />
+          <Heading>{user.name}</Heading>
+          <Image src={getLogoURL(user.site)} width={"50px"} height={"50px"} />
+          {
+            //TODO: show refresh available time like on opgg
+          }
+          <Button
+            variant="subtle"
+            position="absolute"
+            right={0}
+            onClick={syncListCallback}
+          >
+            Refresh
+          </Button>
+        </Flex>
+      )}
+    </VStack>
   );
 };
 
