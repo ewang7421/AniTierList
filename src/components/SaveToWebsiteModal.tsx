@@ -1,14 +1,4 @@
-import {
-  Button,
-  createListCollection,
-  Box,
-  Flex,
-  ListCollection,
-  Image,
-  Table,
-  Text,
-  Heading,
-} from "@chakra-ui/react";
+import { Button, Flex, Image, Table, Text, Heading } from "@chakra-ui/react";
 import {
   DialogActionTrigger,
   DialogBody,
@@ -36,7 +26,7 @@ interface SaveToWebsiteModalProps {
   tiers: TierModel[];
 }
 export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
-  //TODO: can also put a warning if the user who is authenticated is different than the 
+  //TODO: can also put a warning if the user who is authenticated is different than the
   //      one in the tierlist
   const [open, setOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -93,7 +83,10 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Save to {isAuthenticated && user ? ListWebsiteDisplayNames[user.site] : "Website"}
+            Save to{" "}
+            {isAuthenticated && user
+              ? ListWebsiteDisplayNames[user.site]
+              : "Website"}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
@@ -105,7 +98,9 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                 <Table.Header>
                   <Table.Row>
                     <Table.ColumnHeader>Title</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="end">Difference</Table.ColumnHeader>
+                    <Table.ColumnHeader textAlign="end">
+                      Difference
+                    </Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="end">Old</Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="end">New</Table.ColumnHeader>
                   </Table.Row>
@@ -114,7 +109,9 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                   {tiers.map((tier) => {
                     return tier.entries.map((changedEntry) => {
                       // Find the corresponding old entry
-                      const oldEntry = oldList?.find((oldEntry) => oldEntry.id === changedEntry.id);
+                      const oldEntry = oldList?.find(
+                        (oldEntry) => oldEntry.id === changedEntry.id
+                      );
                       const newScore = tier.maxScore;
                       return (
                         <Table.Row key={changedEntry.id}>
@@ -122,7 +119,9 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                           <Table.Cell textAlign="end">
                             {oldEntry ? newScore - oldEntry.score : ""}
                           </Table.Cell>
-                          <Table.Cell textAlign="end">{oldEntry ? oldEntry.score : ""}</Table.Cell>
+                          <Table.Cell textAlign="end">
+                            {oldEntry ? oldEntry.score : ""}
+                          </Table.Cell>
                           <Table.Cell textAlign="end">{newScore}</Table.Cell>
                         </Table.Row>
                       );
@@ -133,8 +132,14 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
             </>
           ) : (
             <Flex direction="column" gap={2}>
-              <p>Log in to an account to update your ratings based on this tier list.</p>
-              <Button variant={"subtle"} style={{ backgroundColor: "#2e51a2", color: "white" }}>
+              <p>
+                Log in to an account to update your ratings based on this tier
+                list.
+              </p>
+              <Button
+                variant={"subtle"}
+                style={{ backgroundColor: "#2e51a2", color: "white" }}
+              >
                 Log in with MyAnimeList
               </Button>
               <Button
@@ -142,7 +147,9 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                 style={{ backgroundColor: "#1e2630", color: "white" }}
                 asChild
               >
-                <a href={getAuthURL(ListWebsite.AniList)}>Log in with Anilist</a>
+                <a href={getAuthURL(ListWebsite.AniList)}>
+                  Log in with Anilist
+                </a>
               </Button>
             </Flex>
           )}
@@ -176,9 +183,3 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
     </DialogRoot>
   );
 };
-const listWebsites = createListCollection({
-  items: [
-    { label: "Anilist", value: ListWebsite.AniList.toString() },
-    { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
-  ],
-});

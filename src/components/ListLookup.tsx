@@ -1,4 +1,4 @@
-import { TierListEntry, ListWebsite, TierListModel } from "@/types/types";
+import { ListWebsite } from "@/types/types";
 import {
   HStack,
   SelectContent,
@@ -21,7 +21,9 @@ interface ListLookupProps {
 export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
   const [username, setUsername] = useState("");
   const [listWebsite, setListWebsite] = useState<string[]>(
-    JSON.parse(window.localStorage.getItem("AniTierList:lookupDropdown:selected") || "[]")
+    JSON.parse(
+      window.localStorage.getItem("AniTierList:lookupDropdown:selected") || "[]"
+    )
   );
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
@@ -46,7 +48,9 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
     const site = listWebsite[0] as ListWebsite;
     if (!Object.values(ListWebsite).includes(site)) {
       setSelectError("Unexpected Select Error");
-      throw Error("Unexpected Select Error: Selected site is not a ListWebsite");
+      throw Error(
+        "Unexpected Select Error: Selected site is not a ListWebsite"
+      );
     }
     setIsLoading(true);
     try {
@@ -63,7 +67,10 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
     }
   };
   useEffect(() => {
-    window.localStorage.setItem("AniTierList:lookupDropdown:selected", JSON.stringify(listWebsite));
+    window.localStorage.setItem(
+      "AniTierList:lookupDropdown:selected",
+      JSON.stringify(listWebsite)
+    );
   }, [listWebsite]);
 
   // TODO: In general check equality operators and make them all type strict (===)
@@ -119,7 +126,12 @@ export const ListLookup = ({ setInventoryCallback }: ListLookupProps) => {
         <Field.ErrorText>{inputError}</Field.ErrorText>
       </Field.Root>
 
-      <Button mt="25px" variant="subtle" onClick={callbackWrapper} loading={isLoading}>
+      <Button
+        mt="25px"
+        variant="subtle"
+        onClick={callbackWrapper}
+        loading={isLoading}
+      >
         get
       </Button>
     </HStack>

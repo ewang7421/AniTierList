@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Entry } from "@/components/Entry";
-import { InventoryModel, ListWebsite, TierListEntry } from "../types/types";
-import { Button, Flex, HStack, SimpleGrid, VStack } from "@chakra-ui/react";
+import { InventoryModel, ListWebsite } from "../types/types";
+import { Flex, HStack, SimpleGrid, VStack } from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   PaginationItems,
   PaginationNextTrigger,
-  PaginationPageText,
   PaginationPrevTrigger,
   PaginationRoot,
 } from "@/components/ui/pagination";
@@ -18,7 +17,10 @@ interface InventoryProps {
   setInventoryCallback: (site: ListWebsite, username: string) => Promise<void>;
 }
 
-export const Inventory = ({ inventory, setInventoryCallback }: InventoryProps) => {
+export const Inventory = ({
+  inventory,
+  setInventoryCallback,
+}: InventoryProps) => {
   const columnCount = 10;
   const rowsPerPage = 5;
   const pageSize = columnCount * rowsPerPage;
@@ -28,7 +30,7 @@ export const Inventory = ({ inventory, setInventoryCallback }: InventoryProps) =
   const startRange = (page - 1) * pageSize;
   const endRange = startRange + pageSize;
 
-  let visibleEntries = inventory.entries.slice(startRange, endRange);
+  const visibleEntries = inventory.entries.slice(startRange, endRange);
 
   // Get the current page slice
   const { setNodeRef } = useDroppable({
@@ -39,8 +41,13 @@ export const Inventory = ({ inventory, setInventoryCallback }: InventoryProps) =
   // consider resetting page to 1 if a new inventory is loaded,
   // maybe move all the inventory fetching stuff in here so it's easier to work with
   useEffect(() => {
-    setPage(Math.min(page, Math.max(1, Math.ceil(inventory.entries.length / pageSize))));
-  }, [inventory]);
+    setPage(
+      Math.min(
+        page,
+        Math.max(1, Math.ceil(inventory.entries.length / pageSize))
+      )
+    );
+  }, [inventory, page, pageSize]);
   return (
     <VStack>
       <ListLookup setInventoryCallback={setInventoryCallback} />

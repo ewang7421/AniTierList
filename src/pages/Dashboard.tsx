@@ -1,7 +1,13 @@
-import { VStack, Box, createListCollection } from "@chakra-ui/react";
+import { VStack, Box } from "@chakra-ui/react";
 import { getList } from "@/api/api";
-import { useState } from "react";
-import { ListWebsite, TierListEntry, TierListModel, TierModel } from "@/types/types";
+import { useState, useEffect } from "react";
+import {
+  ListWebsite,
+  TierListEntry,
+  TierListModel,
+  TierModel,
+  User,
+} from "@/types/types";
 import { Tierlist } from "@/components/Tierlist";
 import { Inventory } from "@/components/Inventory";
 import { arrayMove } from "@dnd-kit/sortable";
@@ -9,22 +15,33 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
 
+const currentUser: User | null = JSON.parse(
+  window.localStorage.getItem("AniTierList:Dashboard:user") || "null"
+) as User | null;
+
+const cachedTierListModel: TierListModel | null = JSON.parse(
+  window.localStorage.getItem("AniTierList:Dashboard:TierListModel") || "null"
+) as TierListModel | null;
 // when getting from localstorage, put a last updated and a force update on lists (maybe even rate limit the force update)
 export const Dashboard = () => {
-  const [username, setUsername] = useState("watermeloans");
-  const [listWebsite, setListWebsite] = useState<string[]>([]);
-  const [tierListModel, setTierlistModel] = useState<TierListModel>({
-    inventory: { entries: [] },
-    tiers: [
-      // the inventory is at index 0
-      { entries: [], name: "A", minScore: 8, maxScore: 9 },
-      { entries: [], name: "B", minScore: 6, maxScore: 7 },
-      { entries: [], name: "C", minScore: 4, maxScore: 5 },
-      { entries: [], name: "D", minScore: 2, maxScore: 3 },
-      { entries: [], name: "F", minScore: 0, maxScore: 1 },
-    ],
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [tierListModel, setTierlistModel] = useState<TierListModel>(
+    cachedTierListModel || {
+      inventory: { entries: [] },
+      tiers: [
+        // the inventory is at index 0
+        { entries: [], name: "A", minScore: 8, maxScore: 9 },
+        { entries: [], name: "B", minScore: 6, maxScore: 7 },
+        { entries: [], name: "C", minScore: 4, maxScore: 5 },
+        { entries: [], name: "D", minScore: 2, maxScore: 3 },
+        { entries: [], name: "F", minScore: 0, maxScore: 1 },
+      ],
+    }
+  );
   const [activeEntry, setActiveEntry] = useState<TierListEntry | null>(null);
+
+  console.log(cachedTierListModel);
+  console.log(tierListModel);
 
   // TODO: have some warning telling user that we will reset the state of the tierlist
   const setInventoryCallback = async (site: ListWebsite, username: string) => {
@@ -41,7 +58,10 @@ export const Dashboard = () => {
       if (entries) {
         setTierlistModel((prev) => ({
           ...prev,
-          tiers: prev.tiers.map((prevTier: TierModel) => ({ ...prevTier, entries: [] })),
+          tiers: prev.tiers.map((prevTier: TierModel) => ({
+            ...prevTier,
+            entries: [],
+          })),
           inventory: {
             ...prev.inventory,
             entries: entries,
@@ -112,8 +132,13 @@ export const Dashboard = () => {
         newInventory = {
           ...newInventory,
           entries: [
-            ...newInventory.entries.slice(0, active.data.current.sortable.index),
-            ...newInventory.entries.slice(active.data.current.sortable.index + 1),
+            ...newInventory.entries.slice(
+              0,
+              active.data.current.sortable.index
+            ),
+            ...newInventory.entries.slice(
+              active.data.current.sortable.index + 1
+            ),
           ],
         };
       } else {
@@ -135,7 +160,10 @@ export const Dashboard = () => {
           ...newInventory,
           entries: over.data.current.sortable
             ? [
-                ...newInventory.entries.slice(0, over.data.current.sortable.index),
+                ...newInventory.entries.slice(
+                  0,
+                  over.data.current.sortable.index
+                ),
                 active.data.current.entry,
                 ...newInventory.entries.slice(over.data.current.sortable.index),
               ]
@@ -149,7 +177,10 @@ export const Dashboard = () => {
                 ...tier,
                 entries: over.data.current.sortable
                   ? [
-                      ...tier.entries.slice(0, over.data.current.sortable.index),
+                      ...tier.entries.slice(
+                        0,
+                        over.data.current.sortable.index
+                      ),
                       active.data.current.entry,
                       ...tier.entries.slice(over.data.current.sortable.index),
                     ]
@@ -159,13 +190,23 @@ export const Dashboard = () => {
         );
       }
 
-      setTierlistModel((prev) => ({ ...prev, inventory: newInventory, tiers: newTiers }));
+      setTierlistModel((prev) => ({
+        ...prev,
+        inventory: newInventory,
+        tiers: newTiers,
+      }));
       console.log(tierListModel);
     }
 
     setActiveEntry(null);
   };
 
+  useEffect(() => {
+    window.localStorage.setItem(
+      "AniTierList:Dashboard:TierListModel",
+      JSON.stringify(tierListModel)
+    );
+  }, [tierListModel]);
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <Box>
@@ -187,9 +228,3 @@ export const Dashboard = () => {
     </DndContext>
   );
 };
-const listWebsites = createListCollection({
-  items: [
-    { label: "Anilist", value: ListWebsite.AniList.toString() },
-    { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
-  ],
-});
