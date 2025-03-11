@@ -14,7 +14,7 @@ export const Tierlist = ({ tierModels }: TierlistProps) => {
       <Text>Tierlist</Text>
       {tierModels &&
         tierModels.map((model, index) => (
-          <SortableContext items={model.entries}>
+          <SortableContext key={model.name} items={model.entries}>
             <Tier tierModel={model} index={index} />
           </SortableContext>
         ))}

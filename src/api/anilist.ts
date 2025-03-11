@@ -13,12 +13,19 @@ import {
 // Storing it in a separate .graphql/.gql file is also possible
 
 // Make the HTTP Api request
+// TODO: probabyly forceSingleCompleted in the query, the only argument
+// against that would be to allow users to sort by their custom completed
+// scheme (idk how it works, i think by format like tv, etc)
 export async function getAnilistEntries(username: string): Promise<TierListEntry[]> {
   const query = `
-query ($userName: String) { # Define which variables will be used in the query (id)
-  MediaListCollection (userName: $userName, type: ANIME) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
+query ($userName: String, $type: MediaType, $status: MediaListStatus) { # Define which variables will be used in the query (id)
+  MediaListCollection (userName: $userName, type: $type, status: $status) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
     user {
       id
+      name
+      avatar {
+        medium
+      }
     }
     lists {
       status
@@ -45,6 +52,8 @@ query ($userName: String) { # Define which variables will be used in the query (
   // Define our query variables and values that will be used in the query request
   const variables = {
     userName: username,
+    type: "ANIME",
+    status: "COMPLETED",
   };
   return getAnilistData<TierListEntry[]>(query, variables, handleListResponse, handleListData);
 }

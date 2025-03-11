@@ -36,6 +36,8 @@ interface SaveToWebsiteModalProps {
   tiers: TierModel[];
 }
 export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
+  //TODO: can also put a warning if the user who is authenticated is different than the 
+  //      one in the tierlist
   const [open, setOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -103,6 +105,7 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                 <Table.Header>
                   <Table.Row>
                     <Table.ColumnHeader>Title</Table.ColumnHeader>
+                    <Table.ColumnHeader textAlign="end">Difference</Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="end">Old</Table.ColumnHeader>
                     <Table.ColumnHeader textAlign="end">New</Table.ColumnHeader>
                   </Table.Row>
@@ -112,12 +115,15 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                     return tier.entries.map((changedEntry) => {
                       // Find the corresponding old entry
                       const oldEntry = oldList?.find((oldEntry) => oldEntry.id === changedEntry.id);
-
+                      const newScore = tier.maxScore;
                       return (
                         <Table.Row key={changedEntry.id}>
                           <Table.Cell>{changedEntry.title}</Table.Cell>
+                          <Table.Cell textAlign="end">
+                            {oldEntry ? newScore - oldEntry.score : ""}
+                          </Table.Cell>
                           <Table.Cell textAlign="end">{oldEntry ? oldEntry.score : ""}</Table.Cell>
-                          <Table.Cell textAlign="end">{tier.maxScore}</Table.Cell>
+                          <Table.Cell textAlign="end">{newScore}</Table.Cell>
                         </Table.Row>
                       );
                     });

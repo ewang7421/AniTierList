@@ -13,7 +13,7 @@ import {
   Field,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-
+//TODO: allow user to authenticate to get lists because of private entries
 interface ListLookupProps {
   setInventoryCallback: (site: ListWebsite, username: string) => Promise<void>;
 }

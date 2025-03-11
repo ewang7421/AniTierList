@@ -9,6 +9,7 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
 
+// when getting from localstorage, put a last updated and a force update on lists (maybe even rate limit the force update)
 export const Dashboard = () => {
   const [username, setUsername] = useState("watermeloans");
   const [listWebsite, setListWebsite] = useState<string[]>([]);
@@ -27,8 +28,8 @@ export const Dashboard = () => {
 
   // TODO: have some warning telling user that we will reset the state of the tierlist
   const setInventoryCallback = async (site: ListWebsite, username: string) => {
-    if (username.trim().length < 1) {
-      return;
+    if (username.trim().length < 2) {
+      throw Error("Username must be at least 2 characters");
     }
     if (tierListModel.tiers.some((tierModel) => tierModel.entries.length > 0)) {
       console.log("send warning that tiers will be reset");
