@@ -77,6 +77,10 @@ export interface List {
 export interface MediaListCollection {
   user: {
     id: number;
+    name: string;
+    avatar: {
+      medium: string;
+    };
   };
   lists: List[];
 }

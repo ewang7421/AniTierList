@@ -62,7 +62,9 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
               setUser(user);
               setIsAuthenticated(true);
               getList(user.site, user.name)
-                .then((list) => setOldList(list))
+                .then((mediaListCollection) =>
+                  setOldList(mediaListCollection.completedList)
+                )
                 .catch((error) => console.error(error));
             }
           })
