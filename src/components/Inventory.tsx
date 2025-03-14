@@ -19,6 +19,9 @@ interface InventoryProps {
   syncListCallback: () => void;
 }
 
+const lastUpdatedStr: string = localStorage.getItem(
+  "AniTierList:Inventory:lastUpdated"
+);
 export const Inventory = ({
   inventory,
   user,

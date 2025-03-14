@@ -1,4 +1,13 @@
-import { Button, Flex, Image, Table, Text, Heading } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Image,
+  Table,
+  Text,
+  Heading,
+  VStack,
+  HStack,
+} from "@chakra-ui/react";
 import {
   DialogActionTrigger,
   DialogBody,
@@ -21,19 +30,35 @@ import { getAuthURL, getList, saveEntries } from "@/api/api";
 import { useEffect } from "react";
 import { useState } from "react";
 import { getAnilistAuthenticatedUser } from "@/api/anilist";
+import { useSearchParams } from "react-router-dom";
 
 interface SaveToWebsiteModalProps {
   tiers: TierModel[];
 }
+const cachedAuthenticatedUser: User | null = JSON.parse(
+  window.localStorage.getItem("AniTierList:saveModal:authenticatedUser") ||
+    "null"
+) as User | null;
+
+const cachedAuthenticatedList: TierListEntry[] | null = JSON.parse(
+  window.localStorage.getItem("AniTierList:saveModal:authenticatedList") ||
+    "null"
+) as TierListEntry[] | null;
+
+const lastUpdated: number | null = window.localStorage.getItem(
+  "AniTierList:saveModal:authenticatedLastUpdated"
+);
+
 export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
   //TODO: can also put a warning if the user who is authenticated is different than the
   //      one in the tierlist
-  const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [oldList, setOldList] = useState<TierListEntry[] | null>(null);
+  const [user, setUser] = useState<User | null>(cachedAuthenticatedUser);
+  const [oldList, setOldList] = useState<TierListEntry[] | null>(
+    cachedAuthenticatedList
+  );
   const [isSaving, setIsSaving] = useState(false);
-
   useEffect(() => {
     // TODO: potentially remove this open check and open from dependency array because
     // it's rlly bad in strictmode.
@@ -43,8 +68,7 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
       return;
     }
     // OAuth token in URL
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const newAccessToken = params.get("access_token");
+    const newAccessToken = searchParams.get("access_token");
 
     if (newAccessToken) {
       localStorage.setItem("access_token", newAccessToken);
@@ -73,10 +97,19 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
         console.error("Invalid token:", error);
       }
     }
-  }, [open]);
+  }, [searchParams]);
 
   return (
-    <DialogRoot lazyMount open={open} onOpenChange={(e) => setOpen(e.open)}>
+    <DialogRoot
+      lazyMount
+      open={searchParams.get("saveModalOpen") === "true"}
+      onOpenChange={(e) =>
+        setSearchParams((prev) => {
+          prev.set("saveModalOpen", e.open.toString());
+          return prev;
+        })
+      }
+    >
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           Save
@@ -93,8 +126,15 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
         </DialogHeader>
         <DialogBody>
           {isAuthenticated ? (
-            <>
-              <Image src={user ? user.avatar : "#"} /> <Text>{user?.name}</Text>
+            <VStack>
+              <HStack width="100%" justify={"start"} align="end">
+                <Image
+                  src={user ? user.avatar : "#"}
+                  width="100px"
+                  height="100px"
+                />{" "}
+                <Heading>{user?.name}</Heading>
+              </HStack>
               <Heading>Confirm Changes</Heading>
               <Table.Root size="sm">
                 <Table.Header>
@@ -131,7 +171,7 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                   })}
                 </Table.Body>
               </Table.Root>
-            </>
+            </VStack>
           ) : (
             <Flex direction="column" gap={2}>
               <p>
