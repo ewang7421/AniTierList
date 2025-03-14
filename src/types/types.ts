@@ -20,7 +20,7 @@ export type TierListEntry = {
   title: string;
   imageUrl: string;
   score: number;
-  tier: number;
+  tierIndex: "inventory" | number;
 
   //anilist entry id, probably should be refactored
   entryId: number;
