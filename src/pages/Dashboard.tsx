@@ -14,7 +14,6 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
-import { UNSAFE_ErrorResponseImpl } from "react-router-dom";
 
 const cachedLoadedUser: User | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:loadedUser") || "null"

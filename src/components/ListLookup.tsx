@@ -19,6 +19,7 @@ import {
 import { useState, useEffect } from "react";
 import { User } from "@/types/types";
 import { getLogoURL } from "@/api/api";
+import { RefreshButton } from "./RefreshButton";
 //TODO: allow user to authenticate to get lists because of private entries
 interface ListLookupProps {
   user: User | null;
@@ -171,6 +172,10 @@ export const ListLookup = ({
           >
             Refresh
           </Button>
+          <RefreshButton
+            syncListCallback={function (): void {}}
+            lastUpdatedKey="AniTierList:Inventory:lastUpdated"
+          />
         </Flex>
       )}
     </VStack>
