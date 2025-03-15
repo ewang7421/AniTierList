@@ -1,21 +1,28 @@
 import { TierListEntry, User } from "@/types/types";
 import { Field, Button } from "@chakra-ui/react";
 import { getList } from "@/api/api";
+import { useEffect, useState } from "react";
 
 interface RefreshButtonProps {
   user: User;
   oldEntries: TierListEntry[];
-  syncListCallback: (entries: TierListEntry[]) => void;
+  setEntries: (entries: TierListEntry[]) => void;
   lastUpdatedKey: string;
 }
 
-const dateToLastUpdatedText = (date: Date): string => {
+const dateStrToLastUpdatedText = (dateStr: string | null): string => {
+  if (dateStr == null) {
+    return "N/A";
+  }
   const now = new Date();
-  const diff = now.getTime() - date.getTime();
+  const lastUpdated = new Date(dateStr);
+  const diff = now.getTime() - lastUpdated.getTime();
   if (diff < 0) {
     return "N/A";
   }
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const diffInSeconds = Math.floor(
+    (now.getTime() - lastUpdated.getTime()) / 1000
+  );
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   const diffInHours = Math.floor(diffInMinutes / 60);
   const diffInDays = Math.floor(diffInHours / 24);
@@ -36,7 +43,7 @@ const dateToLastUpdatedText = (date: Date): string => {
 export const RefreshButton = ({
   user,
   oldEntries,
-  syncListCallback,
+  setEntries,
   lastUpdatedKey,
 }: RefreshButtonProps) => {
   const syncEntries = async (): Promise<TierListEntry[]> => {
@@ -69,29 +76,48 @@ export const RefreshButton = ({
         }
       }
 
+      //TODO: check which title you are actually comparing
       // Step 5: Convert Map back to an array for sorting
-      return Array.from(cachedMap.values());
+      return Array.from(cachedMap.values()).sort((a, b) =>
+        a.title.localeCompare(b.title)
+      ); // Sort alphabetically by id
     } catch (error) {
-      console.error(error);
-      throw error;
+      console.error("Error during sync:", error);
+      return oldEntries;
     }
   };
+  const [lastUpdatedStr, setLastUpdatedStr] = useState<string>(
+    dateStrToLastUpdatedText(localStorage.getItem(lastUpdatedKey))
+  );
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLastUpdated = localStorage.getItem(lastUpdatedKey);
+      if (currentLastUpdated) {
+        setLastUpdatedStr(dateStrToLastUpdatedText(currentLastUpdated));
+      }
+    }, 1000); // Updates the lastUpdated every second
 
-  const lastUpdatedStr: string | null = localStorage.getItem(lastUpdatedKey);
+    return () => clearInterval(interval); // Cleanup on component unmount
+  }, [lastUpdatedKey]);
+
   return (
     <Field.Root>
       <Button
         variant="subtle"
-        onClick={async () => {
-          syncListCallback(await syncEntries());
-          localStorage.setItem(lastUpdatedKey, new Date().toISOString());
+        onClick={() => {
+          syncEntries()
+            .then((result) => {
+              setEntries(result);
+              localStorage.setItem(lastUpdatedKey, new Date().toISOString());
+            })
+            .catch((error) => {
+              console.error("Error during sync:", error);
+            });
         }}
       >
-        RefreshTEST
+        Refresh
       </Button>
-      <Field.HelperText>{`Last Updated: ${
-        lastUpdatedStr ? dateToLastUpdatedText(new Date(lastUpdatedStr)) : "N/A"
-      }`}</Field.HelperText>
+      <Field.HelperText>{`Last Updated: ${lastUpdatedStr}`}</Field.HelperText>
     </Field.Root>
   );
 };

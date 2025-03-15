@@ -11,23 +11,14 @@ import {
   PaginationRoot,
 } from "@/components/ui/pagination";
 import { ListLookup } from "@/components/ListLookup";
-
-interface InventoryProps {
-  inventory: InventoryModel;
-  user: User | null;
-  loadListCallback: (site: ListWebsite, username: string) => Promise<void>;
-  syncListCallback: () => void;
-}
+import { useLoadedUser } from "@/context/LoadedUserContext";
 
 const lastUpdatedStr: string = localStorage.getItem(
   "AniTierList:Inventory:lastUpdated"
 );
-export const Inventory = ({
-  inventory,
-  user,
-  loadListCallback,
-  syncListCallback,
-}: InventoryProps) => {
+export const Inventory = () => {
+  const { loadedUser, loadUserList, tierListModel, setTierListModel } =
+    useLoadedUser();
   const columnCount = 10;
   const rowsPerPage = 5;
   const pageSize = columnCount * rowsPerPage;
@@ -37,7 +28,10 @@ export const Inventory = ({
   const startRange = (page - 1) * pageSize;
   const endRange = startRange + pageSize;
 
-  const visibleEntries = inventory.entries.slice(startRange, endRange);
+  const visibleEntries = tierListModel.inventory.entries.slice(
+    startRange,
+    endRange
+  );
 
   // Get the current page slice
   const { setNodeRef } = useDroppable({
@@ -51,27 +45,30 @@ export const Inventory = ({
     setPage(
       Math.min(
         page,
-        Math.max(1, Math.ceil(inventory.entries.length / pageSize))
+        Math.max(
+          1,
+          Math.ceil(tierListModel.inventory.entries.length / pageSize)
+        )
       )
     );
-  }, [inventory, page, pageSize]);
+  }, [tierListModel.inventory, page, pageSize]);
   return (
     <VStack>
       <ListLookup
-        user={user}
-        loadListCallback={loadListCallback}
-        syncListCallback={syncListCallback}
+        user={loadedUser}
+        loadListCallback={loadUserList}
+        setEntries={() => {}}
       />
-      <SortableContext items={inventory.entries}>
+      <SortableContext items={tierListModel.inventory.entries}>
         <Flex direction="column" align="center">
           <SimpleGrid columns={columnCount} ref={setNodeRef} minHeight={"50vh"}>
             {visibleEntries.map((entry) => (
               <Entry key={entry.id} entry={entry} containerId={"inventory"} />
             ))}
           </SimpleGrid>
-          {inventory.entries.length > 0 && (
+          {tierListModel.inventory.entries.length > 0 && (
             <PaginationRoot
-              count={inventory.entries.length}
+              count={tierListModel.inventory.entries.length}
               pageSize={pageSize}
               onPageChange={(e) => {
                 setPage(e.page);

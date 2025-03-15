@@ -30,20 +30,9 @@ import { useState } from "react";
 import { getAnilistAuthenticatedUser } from "@/api/anilist";
 import { useSearchParams } from "react-router-dom";
 import { useLoadedUser } from "@/context/LoadedUserContext";
+import { RefreshButton } from "./RefreshButton";
 
-const cachedAuthenticatedUser: User | null = JSON.parse(
-  window.localStorage.getItem("AniTierList:saveModal:authenticatedUser") ||
-    "null"
-) as User | null;
-
-const cachedAuthenticatedList: TierListEntry[] | null = JSON.parse(
-  window.localStorage.getItem("AniTierList:saveModal:authenticatedList") ||
-    "null"
-) as TierListEntry[] | null;
-
-const lastUpdated: number | null = window.localStorage.getItem(
-  "AniTierList:saveModal:authenticatedLastUpdated"
-);
+const refreshTimeInterval = 1000 * 60 * 60;
 
 export const SaveToWebsiteModal = () => {
   //TODO: can also put a warning if the user who is authenticated is different than the
@@ -51,11 +40,16 @@ export const SaveToWebsiteModal = () => {
   const { tierListModel } = useLoadedUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(
-    cachedAuthenticatedUser
+    JSON.parse(window.localStorage.getItem("authenticatedUser") || "null")
   );
   const [authenticatedList, setAuthenticatedList] = useState<
     TierListEntry[] | null
-  >(cachedAuthenticatedList);
+  >(
+    JSON.parse(window.localStorage.getItem("authenticatedList") || "null") as
+      | TierListEntry[]
+      | null
+  );
+  const lastUpdatedKey = "authenticatedLastUpdated";
   let accessToken = searchParams.get("access_token");
   if (accessToken == null) {
     accessToken = localStorage.getItem("access_token");
@@ -67,28 +61,40 @@ export const SaveToWebsiteModal = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    const lastUpdated = window.localStorage.getItem(lastUpdatedKey);
+    if (lastUpdated != null) {
+      const lastUpdatedDate = new Date(lastUpdated);
+      const now = new Date();
+      if (now.getTime() - lastUpdatedDate.getTime() < refreshTimeInterval) {
+        const earlierTime =
+          now.getTime() < lastUpdatedDate.getTime() ? now : lastUpdatedDate;
+        // set the lastUpdated to now just in case there are weird inconsistencies of what the last updated time is
+        localStorage.setItem(lastUpdatedKey, earlierTime.toISOString());
+        return;
+      }
+    }
     // Get the access token from searchparams
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    let accessToken = hashParams.get("access_token");
-    if (accessToken != null) {
+    let access_token = hashParams.get("access_token");
+    if (access_token != null) {
       // set new access token to localstorage if found
-      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("access_token", access_token);
       window.history.replaceState(
         null,
         "",
         window.location.pathname + window.location.search
       );
     } else {
-      accessToken = localStorage.getItem("access_token");
+      access_token = localStorage.getItem("access_token");
     }
 
-    if (accessToken == null) {
+    if (access_token == null) {
       return;
     }
 
     try {
       // Fetch user avatar asynchronously
-      getAnilistAuthenticatedUser(accessToken)
+      getAnilistAuthenticatedUser(access_token)
         .then((user) => {
           //todo: if statement might be redundant, maybe should represent logic with errors
           if (user) {
@@ -101,15 +107,24 @@ export const SaveToWebsiteModal = () => {
           }
         })
         .catch((error) => console.error("Failed to fetch avatar:", error));
-      localStorage.set(
-        "AniTierList:saveModal:authenticatedLastUpdated",
-        new Date().toISOString
-      );
+      localStorage.setItem(lastUpdatedKey, new Date().toISOString());
     } catch (error) {
       console.error("Invalid token:", error);
     }
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem(
+      "authenticatedUser",
+      JSON.stringify(authenticatedUser)
+    );
+  }, [authenticatedUser]);
+  useEffect(() => {
+    localStorage.setItem(
+      "authenticatedList",
+      JSON.stringify(authenticatedList)
+    );
+  }, [authenticatedList]);
   return (
     <DialogRoot
       lazyMount
@@ -143,10 +158,18 @@ export const SaveToWebsiteModal = () => {
                   src={authenticatedUser.avatar}
                   width="100px"
                   height="100px"
-                />{" "}
+                />
                 <Heading>{authenticatedUser.name}</Heading>
               </HStack>
-              <Heading>Confirm Changes</Heading>
+              <HStack>
+                <Heading>Confirm Changes</Heading>
+                <RefreshButton
+                  user={authenticatedUser}
+                  oldEntries={[]}
+                  setEntries={() => {}}
+                  lastUpdatedKey={lastUpdatedKey}
+                />
+              </HStack>
               <Table.Root size="sm">
                 <Table.Header>
                   <Table.Row>
@@ -214,7 +237,7 @@ export const SaveToWebsiteModal = () => {
           <Button
             variant="subtle"
             onClick={() => {
-              if (isAuthenticated) {
+              if (isAuthenticated && accessToken != null) {
                 try {
                   setIsSaving(true);
                   saveEntries(

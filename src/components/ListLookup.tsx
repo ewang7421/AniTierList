@@ -1,4 +1,4 @@
-import { ListWebsite } from "@/types/types";
+import { ListWebsite, TierListEntry } from "@/types/types";
 import {
   HStack,
   SelectContent,
@@ -24,13 +24,13 @@ import { RefreshButton } from "./RefreshButton";
 interface ListLookupProps {
   user: User | null;
   loadListCallback: (site: ListWebsite, username: string) => Promise<void>;
-  syncListCallback: () => void;
+  setEntries: (entries: TierListEntry[]) => void;
 }
 
 export const ListLookup = ({
   user,
   loadListCallback,
-  syncListCallback,
+  setEntries,
 }: ListLookupProps) => {
   const [username, setUsername] = useState("");
   const [listWebsite, setListWebsite] = useState<string[]>(
@@ -164,16 +164,10 @@ export const ListLookup = ({
           {
             //TODO: show refresh available time like on opgg
           }
-          <Button
-            variant="subtle"
-            position="absolute"
-            right={0}
-            onClick={syncListCallback}
-          >
-            Refresh
-          </Button>
           <RefreshButton
-            syncListCallback={function (): void {}}
+            user={user}
+            oldEntries={[]}
+            setEntries={() => {}}
             lastUpdatedKey="AniTierList:Inventory:lastUpdated"
           />
         </Flex>
