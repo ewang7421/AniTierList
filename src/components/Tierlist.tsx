@@ -1,5 +1,5 @@
 import { Text, Flex, Button, HStack } from "@chakra-ui/react";
-import { TierListEntry, TierModel } from "../types/types";
+import { TierModel } from "../types/types";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Tier } from "@/components/Tier";
 import { SaveToWebsiteModal } from "@/components/SaveToWebsiteModal";
@@ -19,7 +19,7 @@ export const Tierlist = ({ tierModels }: TierlistProps) => {
           </SortableContext>
         ))}
       <HStack alignSelf={"center"}>
-        <SaveToWebsiteModal tiers={tierModels} />
+        <SaveToWebsiteModal />
         <Button variant="subtle">Download</Button>
       </HStack>
     </Flex>

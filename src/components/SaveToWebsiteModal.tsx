@@ -50,51 +50,65 @@ export const SaveToWebsiteModal = () => {
   //      one in the tierlist
   const { tierListModel } = useLoadedUser();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<User | null>(cachedAuthenticatedUser);
-  const [oldList, setOldList] = useState<TierListEntry[] | null>(
-    cachedAuthenticatedList
+  const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(
+    cachedAuthenticatedUser
   );
+  const [authenticatedList, setAuthenticatedList] = useState<
+    TierListEntry[] | null
+  >(cachedAuthenticatedList);
+  let accessToken = searchParams.get("access_token");
+  if (accessToken == null) {
+    accessToken = localStorage.getItem("access_token");
+  }
+  const isAuthenticated =
+    authenticatedUser != null &&
+    authenticatedList != null &&
+    accessToken != null;
   const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
-    // TODO: potentially remove this open check and open from dependency array because
-    // it's rlly bad in strictmode.
-    // but also make sure to not update this every time you open and close the modal?
-    // idk it's pretty horrible perf wise but justifiable to some degree?
-    if (!open) {
+    // Get the access token from searchparams
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    let accessToken = hashParams.get("access_token");
+    if (accessToken != null) {
+      // set new access token to localstorage if found
+      localStorage.setItem("access_token", accessToken);
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
+    } else {
+      accessToken = localStorage.getItem("access_token");
+    }
+
+    if (accessToken == null) {
       return;
     }
-    // OAuth token in URL
-    const newAccessToken = searchParams.get("access_token");
 
-    if (newAccessToken) {
-      localStorage.setItem("access_token", newAccessToken);
-      window.history.replaceState({}, document.title, "/"); // Remove token from URL
+    try {
+      // Fetch user avatar asynchronously
+      getAnilistAuthenticatedUser(accessToken)
+        .then((user) => {
+          //todo: if statement might be redundant, maybe should represent logic with errors
+          if (user) {
+            setAuthenticatedUser(user);
+            getList(user.site, user.name)
+              .then((mediaListCollection) =>
+                setAuthenticatedList(mediaListCollection.completedList)
+              )
+              .catch((error) => console.error(error));
+          }
+        })
+        .catch((error) => console.error("Failed to fetch avatar:", error));
+      localStorage.set(
+        "AniTierList:saveModal:authenticatedLastUpdated",
+        new Date().toISOString
+      );
+    } catch (error) {
+      console.error("Invalid token:", error);
     }
-    const accessToken = window.localStorage.getItem("access_token");
-
-    if (accessToken) {
-      try {
-        // Fetch user avatar asynchronously
-        getAnilistAuthenticatedUser(accessToken)
-          .then((user) => {
-            //todo: if statement might be redundant, maybe should represent logic with errors
-            if (user) {
-              setUser(user);
-              setIsAuthenticated(true);
-              getList(user.site, user.name)
-                .then((mediaListCollection) =>
-                  setOldList(mediaListCollection.completedList)
-                )
-                .catch((error) => console.error(error));
-            }
-          })
-          .catch((error) => console.error("Failed to fetch avatar:", error));
-      } catch (error) {
-        console.error("Invalid token:", error);
-      }
-    }
-  }, [searchParams]);
+  }, []);
 
   return (
     <DialogRoot
@@ -116,8 +130,8 @@ export const SaveToWebsiteModal = () => {
         <DialogHeader>
           <DialogTitle>
             Save to{" "}
-            {isAuthenticated && user
-              ? ListWebsiteDisplayNames[user.site]
+            {isAuthenticated
+              ? ListWebsiteDisplayNames[authenticatedUser.site]
               : "Website"}
           </DialogTitle>
         </DialogHeader>
@@ -126,11 +140,11 @@ export const SaveToWebsiteModal = () => {
             <VStack>
               <HStack width="100%" justify={"start"} align="end">
                 <Image
-                  src={user ? user.avatar : "#"}
+                  src={authenticatedUser.avatar}
                   width="100px"
                   height="100px"
                 />{" "}
-                <Heading>{user?.name}</Heading>
+                <Heading>{authenticatedUser.name}</Heading>
               </HStack>
               <Heading>Confirm Changes</Heading>
               <Table.Root size="sm">
@@ -148,7 +162,7 @@ export const SaveToWebsiteModal = () => {
                   {tierListModel.tiers.map((tier) => {
                     return tier.entries.map((changedEntry) => {
                       // Find the corresponding old entry
-                      const oldEntry = oldList?.find(
+                      const oldEntry = authenticatedList.find(
                         (oldEntry) => oldEntry.id === changedEntry.id
                       );
                       const newScore = tier.maxScore;
@@ -200,11 +214,14 @@ export const SaveToWebsiteModal = () => {
           <Button
             variant="subtle"
             onClick={() => {
-              const accessToken = window.localStorage.getItem("access_token");
-              if (user && accessToken) {
+              if (isAuthenticated) {
                 try {
                   setIsSaving(true);
-                  saveEntries(user.site, tiers, accessToken);
+                  saveEntries(
+                    authenticatedUser.site,
+                    tierListModel.tiers,
+                    accessToken
+                  );
                 } catch (error) {
                   throw error;
                 } finally {
