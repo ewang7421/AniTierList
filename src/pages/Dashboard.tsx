@@ -1,75 +1,22 @@
 import { VStack, Box } from "@chakra-ui/react";
 import { getList } from "@/api/api";
 import { useState, useEffect } from "react";
-import {
-  ListWebsite,
-  TierListEntry,
-  TierListModel,
-  TierModel,
-  User,
-} from "@/types/types";
+import { ListWebsite, TierListEntry } from "@/types/types";
 import { Tierlist } from "@/components/Tierlist";
 import { Inventory } from "@/components/Inventory";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
-
-const cachedLoadedUser: User | null = JSON.parse(
-  window.localStorage.getItem("AniTierList:Dashboard:loadedUser") || "null"
-) as User | null;
-
-const cachedTierListModel: TierListModel | null = JSON.parse(
-  window.localStorage.getItem("AniTierList:Dashboard:TierListModel") || "null"
-) as TierListModel | null;
+import { useLoadedUser } from "@/context/LoadedUserContext";
 
 // when getting from localstorage, put a last updated and a force update on lists (maybe even rate limit the force update)
 export const Dashboard = () => {
-  const [loadedUser, setLoadedUser] = useState<User | null>(cachedLoadedUser);
-  const [tierListModel, setTierlistModel] = useState<TierListModel>(
-    cachedTierListModel || {
-      inventory: { entries: [] },
-      tiers: [
-        // the inventory is at index 0
-        { entries: [], name: "A", minScore: 8, maxScore: 9 },
-        { entries: [], name: "B", minScore: 6, maxScore: 7 },
-        { entries: [], name: "C", minScore: 4, maxScore: 5 },
-        { entries: [], name: "D", minScore: 2, maxScore: 3 },
-        { entries: [], name: "F", minScore: 0, maxScore: 1 },
-      ],
-    }
-  );
+  const { loadedUser, loadUserList, tierListModel, setTierListModel } =
+    useLoadedUser();
   const [activeEntry, setActiveEntry] = useState<TierListEntry | null>(null);
 
   // TODO: have some warning telling user that we will reset the state of the tierlist
-  const loadUserList = async (site: ListWebsite, username: string) => {
-    try {
-      const { completedList, user } = await fetchUserList(site, username); // Set the state with the fetched data
-      // Set the tier list model's inventory to the fetched anime list
-
-      if (completedList) {
-        setTierlistModel((prev) => ({
-          ...prev,
-          tiers: prev.tiers.map((prevTier: TierModel) => ({
-            ...prevTier,
-            entries: [],
-          })),
-          inventory: {
-            ...prev.inventory,
-            entries: completedList,
-          },
-        }));
-      }
-
-      if (user) {
-        setLoadedUser(user);
-      }
-    } catch (error) {
-      //TODO: this console error is only to prevent eslint error
-      console.error(error);
-      throw error;
-    }
-  };
 
   const fetchUserList = async (site: ListWebsite, username: string) => {
     if (username.trim().length < 2) {
@@ -152,7 +99,7 @@ export const Dashboard = () => {
       });
 
       // Return the sorted list to render
-      setTierlistModel((prev) => ({
+      setTierListModel((prev) => ({
         ...prev,
         inventory: { entries: newInventory },
         tiers: newTiers,
@@ -181,7 +128,7 @@ export const Dashboard = () => {
     // dragging within same tier
     if (active.data.current.containerId == over.data.current.containerId) {
       if (active.data.current.containerId == "inventory") {
-        setTierlistModel((prev) => ({
+        setTierListModel((prev) => ({
           ...prev,
           inventory: {
             entries: arrayMove(
@@ -194,7 +141,7 @@ export const Dashboard = () => {
           },
         }));
       } else {
-        setTierlistModel((prev) => ({
+        setTierListModel((prev) => ({
           ...prev,
 
           tiers: prev.tiers.map((tier, index) =>
@@ -279,7 +226,7 @@ export const Dashboard = () => {
         );
       }
 
-      setTierlistModel((prev) => ({
+      setTierListModel((prev) => ({
         ...prev,
         inventory: newInventory,
         tiers: newTiers,

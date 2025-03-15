@@ -25,7 +25,3 @@ export const Tierlist = ({ tierModels }: TierlistProps) => {
     </Flex>
   );
 };
-
-function tierModelToChanged(tierModel: TierModel): { entry: TierListEntry; rating: number }[] {
-  return tierModel.entries.map((entry) => ({ entry: entry, rating: tierModel.maxScore }));
-}

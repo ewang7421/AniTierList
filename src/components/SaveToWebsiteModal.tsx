@@ -3,7 +3,6 @@ import {
   Flex,
   Image,
   Table,
-  Text,
   Heading,
   VStack,
   HStack,
@@ -24,17 +23,14 @@ import {
   ListWebsite,
   User,
   ListWebsiteDisplayNames,
-  TierModel,
 } from "@/types/types";
 import { getAuthURL, getList, saveEntries } from "@/api/api";
 import { useEffect } from "react";
 import { useState } from "react";
 import { getAnilistAuthenticatedUser } from "@/api/anilist";
 import { useSearchParams } from "react-router-dom";
+import { useLoadedUser } from "@/context/LoadedUserContext";
 
-interface SaveToWebsiteModalProps {
-  tiers: TierModel[];
-}
 const cachedAuthenticatedUser: User | null = JSON.parse(
   window.localStorage.getItem("AniTierList:saveModal:authenticatedUser") ||
     "null"
@@ -49,9 +45,10 @@ const lastUpdated: number | null = window.localStorage.getItem(
   "AniTierList:saveModal:authenticatedLastUpdated"
 );
 
-export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
+export const SaveToWebsiteModal = () => {
   //TODO: can also put a warning if the user who is authenticated is different than the
   //      one in the tierlist
+  const { tierListModel } = useLoadedUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(cachedAuthenticatedUser);
@@ -148,7 +145,7 @@ export const SaveToWebsiteModal = ({ tiers }: SaveToWebsiteModalProps) => {
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
-                  {tiers.map((tier) => {
+                  {tierListModel.tiers.map((tier) => {
                     return tier.entries.map((changedEntry) => {
                       // Find the corresponding old entry
                       const oldEntry = oldList?.find(
