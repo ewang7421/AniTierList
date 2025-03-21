@@ -15,11 +15,13 @@ import {
   Image,
   Heading,
   Flex,
+  StepsPrevTrigger,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { User } from "@/types/types";
 import { getLogoURL } from "@/api/api";
 import { RefreshButton } from "./RefreshButton";
+import { useLoadedUser } from "@/context/LoadedUserContext";
 //TODO: allow user to authenticate to get lists because of private entries
 interface ListLookupProps {
   user: User | null;
@@ -27,11 +29,7 @@ interface ListLookupProps {
   setEntries: (entries: TierListEntry[]) => void;
 }
 
-export const ListLookup = ({
-  user,
-  loadListCallback,
-  setEntries,
-}: ListLookupProps) => {
+export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
   const [username, setUsername] = useState("");
   const [listWebsite, setListWebsite] = useState<string[]>(
     JSON.parse(
@@ -41,6 +39,7 @@ export const ListLookup = ({
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { tierListModel, setTierListModel } = useLoadedUser();
 
   // wrapper because select's event represents a list of selected items, not a singular one
   const fetchListWrapper = async () => {
@@ -166,8 +165,26 @@ export const ListLookup = ({
           }
           <RefreshButton
             user={user}
-            oldEntries={[]}
-            setEntries={() => {}}
+            oldEntries={[
+              ...tierListModel.inventory.entries,
+              ...tierListModel.tiers.flatMap((tier) => tier.entries),
+            ]}
+            setEntries={(newEntries) =>
+              setTierListModel((prev) => {
+                const newInventory = {
+                  entries: newEntries.filter(
+                    (entry) => entry.tierIndex === "inventory"
+                  ),
+                };
+                const newTiers = prev.tiers.map((prevTier, index) => ({
+                  ...prevTier,
+                  entries: newEntries.filter(
+                    (entry) => entry.tierIndex === index
+                  ),
+                }));
+                return { ...prev, tiers: newTiers, inventory: newInventory };
+              })
+            }
             lastUpdatedKey="AniTierList:Inventory:lastUpdated"
           />
         </Flex>

@@ -22,11 +22,13 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
       inventory: { entries: [] },
       tiers: [
         // the inventory is at index 0
-        { entries: [], name: "A", minScore: 8, maxScore: 9 },
-        { entries: [], name: "B", minScore: 6, maxScore: 7 },
-        { entries: [], name: "C", minScore: 4, maxScore: 5 },
-        { entries: [], name: "D", minScore: 2, maxScore: 3 },
-        { entries: [], name: "F", minScore: 0, maxScore: 1 },
+        { entries: [], name: "S", minScore: 8.5, maxScore: 10 },
+        { entries: [], name: "A", minScore: 7, maxScore: 8.5 },
+        { entries: [], name: "B", minScore: 5.5, maxScore: 7 },
+        { entries: [], name: "C", minScore: 4, maxScore: 5.5 },
+        { entries: [], name: "D", minScore: 2.5, maxScore: 4 },
+        { entries: [], name: "E", minScore: 1, maxScore: 2.5 },
+        { entries: [], name: "F", minScore: 1, maxScore: 1 },
       ],
     }
   );

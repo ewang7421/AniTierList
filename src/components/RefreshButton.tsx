@@ -52,33 +52,24 @@ export const RefreshButton = ({
     }
     try {
       const updated = await getList(user.site, user.name);
-      // Step 1: Convert cached list to a Map for O(1) lookups
       const cachedMap = new Map(
         oldEntries.map((oldEntry) => [oldEntry.id, oldEntry])
       );
-
-      // Step 2: Track new and existing items
       const updatedMap = new Map(
         updated.completedList.map((entry) => [entry.id, entry])
       );
 
-      // Step 3: Add new items from updatedList
+      // keep the tier index
       for (const [id, newEntry] of updatedMap) {
-        if (!cachedMap.has(id)) {
-          cachedMap.set(id, newEntry); // Adds if not present
-        }
-      }
-
-      // Step 4: Remove items that are no longer in updatedList
-      for (const id of cachedMap.keys()) {
-        if (!updatedMap.has(id)) {
-          cachedMap.delete(id);
+        const oldEntry = cachedMap.get(id);
+        if (oldEntry != null) {
+          updatedMap.set(id, { ...newEntry, tierIndex: oldEntry.tierIndex });
         }
       }
 
       //TODO: check which title you are actually comparing
       // Step 5: Convert Map back to an array for sorting
-      return Array.from(cachedMap.values()).sort((a, b) =>
+      return Array.from(updatedMap.values()).sort((a, b) =>
         a.title.localeCompare(b.title)
       ); // Sort alphabetically by id
     } catch (error) {

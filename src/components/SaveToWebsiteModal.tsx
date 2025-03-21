@@ -165,8 +165,8 @@ export const SaveToWebsiteModal = () => {
                 <Heading>Confirm Changes</Heading>
                 <RefreshButton
                   user={authenticatedUser}
-                  oldEntries={[]}
-                  setEntries={() => {}}
+                  oldEntries={authenticatedList}
+                  setEntries={setAuthenticatedList}
                   lastUpdatedKey={lastUpdatedKey}
                 />
               </HStack>
