@@ -1,11 +1,7 @@
 import { ListWebsite, TierListEntry } from "@/types/types";
 import {
   HStack,
-  SelectContent,
   SelectItem,
-  SelectLabel,
-  SelectRoot,
-  SelectTrigger,
   SelectValueText,
   createListCollection,
   Input,
@@ -15,7 +11,7 @@ import {
   Image,
   Heading,
   Flex,
-  StepsPrevTrigger,
+  Select,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { User } from "@/types/types";
@@ -38,8 +34,8 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
   );
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { tierListModel, setTierListModel } = useLoadedUser();
+  const { tierListModel, setTierListModel, isLoading, setIsLoading } =
+    useLoadedUser();
 
   // wrapper because select's event represents a list of selected items, not a singular one
   const fetchListWrapper = async () => {
@@ -90,7 +86,7 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
     <VStack width={"100%"}>
       <HStack align="flex-start" minHeight="150px">
         <Field.Root invalid={selectError !== null}>
-          <SelectRoot
+          <Select.Root
             variant="subtle"
             collection={listWebsites}
             value={[listWebsite.toString()]}
@@ -100,18 +96,30 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
             minWidth={"200px"}
             disabled={isLoading}
           >
-            <SelectLabel>Website</SelectLabel>
-            <SelectTrigger>
-              <SelectValueText placeholder="Choose Website" />
-            </SelectTrigger>
-            <SelectContent>
-              {listWebsites.items.map((website) => (
-                <SelectItem item={website} key={website.value}>
-                  {website.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </SelectRoot>
+            <Select.HiddenSelect />
+            <Select.Label />
+
+            <Select.Label>Website</Select.Label>
+
+            <Select.Control>
+              <Select.Trigger>
+                <SelectValueText placeholder="Choose Website" />
+              </Select.Trigger>
+              <Select.IndicatorGroup>
+                <Select.Indicator />
+              </Select.IndicatorGroup>
+            </Select.Control>
+
+            <Select.Positioner>
+              <Select.Content minWidth="{200px}">
+                {listWebsites.items.map((website) => (
+                  <SelectItem item={website} key={website.value}>
+                    {website.label}
+                  </SelectItem>
+                ))}
+              </Select.Content>
+            </Select.Positioner>
+          </Select.Root>
           <Field.ErrorText>{selectError}</Field.ErrorText>
         </Field.Root>
         <Field.Root invalid={inputError !== null}>
@@ -166,26 +174,37 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
           <RefreshButton
             user={user}
             oldEntries={[
-              ...tierListModel.inventory.entries,
-              ...tierListModel.tiers.flatMap((tier) => tier.entries),
+              ...tierListModel.inventory.entries.map((entry) => ({
+                ...entry,
+                tierIndex: "inventory" as TierListEntry["tierIndex"],
+              })),
+              ...tierListModel.tiers.flatMap((tier, index) =>
+                tier.entries.map((entry) => ({ ...entry, tierIndex: index }))
+              ),
             ]}
             setEntries={(newEntries) =>
               setTierListModel((prev) => {
+                console.log("newEntries", newEntries);
                 const newInventory = {
                   entries: newEntries.filter(
-                    (entry) => entry.tierIndex === "inventory"
+                    (entry) =>
+                      entry.tierIndex === "inventory" || entry.tierIndex == null
                   ),
                 };
                 const newTiers = prev.tiers.map((prevTier, index) => ({
                   ...prevTier,
-                  entries: newEntries.filter(
-                    (entry) => entry.tierIndex === index
-                  ),
+                  entries: prevTier.entries.filter((entry) => {
+                    const newEntry = newEntries.find(
+                      (newEntry) => newEntry.id === entry.id
+                    );
+                    return newEntry != null && newEntry.tierIndex === index;
+                  }),
                 }));
                 return { ...prev, tiers: newTiers, inventory: newInventory };
               })
             }
             lastUpdatedKey="AniTierList:Inventory:lastUpdated"
+            setComponentLoading={setIsLoading}
           />
         </Flex>
       )}

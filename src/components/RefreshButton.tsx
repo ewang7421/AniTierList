@@ -1,5 +1,5 @@
 import { TierListEntry, User } from "@/types/types";
-import { Field, Button } from "@chakra-ui/react";
+import { Field, Button, Skeleton } from "@chakra-ui/react";
 import { getList } from "@/api/api";
 import { useEffect, useState } from "react";
 
@@ -8,21 +8,14 @@ interface RefreshButtonProps {
   oldEntries: TierListEntry[];
   setEntries: (entries: TierListEntry[]) => void;
   lastUpdatedKey: string;
+  setComponentLoading: React.Dispatch<React.SetStateAction<boolean>> | null;
 }
 
-const dateStrToLastUpdatedText = (dateStr: string | null): string => {
-  if (dateStr == null) {
+const timeToHumanReadable = (time: number | null): string => {
+  if (time == null) {
     return "N/A";
   }
-  const now = new Date();
-  const lastUpdated = new Date(dateStr);
-  const diff = now.getTime() - lastUpdated.getTime();
-  if (diff < 0) {
-    return "N/A";
-  }
-  const diffInSeconds = Math.floor(
-    (now.getTime() - lastUpdated.getTime()) / 1000
-  );
+  const diffInSeconds = Math.floor(time / 1000);
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   const diffInHours = Math.floor(diffInMinutes / 60);
   const diffInDays = Math.floor(diffInHours / 24);
@@ -45,6 +38,7 @@ export const RefreshButton = ({
   oldEntries,
   setEntries,
   lastUpdatedKey,
+  setComponentLoading,
 }: RefreshButtonProps) => {
   const syncEntries = async (): Promise<TierListEntry[]> => {
     if (!user) {
@@ -58,7 +52,6 @@ export const RefreshButton = ({
       const updatedMap = new Map(
         updated.completedList.map((entry) => [entry.id, entry])
       );
-
       // keep the tier index
       for (const [id, newEntry] of updatedMap) {
         const oldEntry = cachedMap.get(id);
@@ -77,38 +70,66 @@ export const RefreshButton = ({
       return oldEntries;
     }
   };
-  const [lastUpdatedStr, setLastUpdatedStr] = useState<string>(
-    dateStrToLastUpdatedText(localStorage.getItem(lastUpdatedKey))
+  const [timeSinceLastUpdated, setTimeSinceLastUpdated] = useState<
+    number | null
+  >(
+    localStorage.getItem(lastUpdatedKey) != null
+      ? Date.now() -
+          new Date(Number(localStorage.getItem(lastUpdatedKey))).getTime()
+      : null
   );
+  const [loading, setLoading] = useState<boolean>(false);
   useEffect(() => {
     const interval = setInterval(() => {
       const currentLastUpdated = localStorage.getItem(lastUpdatedKey);
-      if (currentLastUpdated) {
-        setLastUpdatedStr(dateStrToLastUpdatedText(currentLastUpdated));
+      if (currentLastUpdated != null) {
+        setTimeSinceLastUpdated(
+          Date.now() - new Date(Number(currentLastUpdated)).getTime()
+        );
       }
     }, 1000); // Updates the lastUpdated every second
-
     return () => clearInterval(interval); // Cleanup on component unmount
   }, [lastUpdatedKey]);
 
   return (
     <Field.Root>
       <Button
+        loading={loading}
+        disabled={
+          timeSinceLastUpdated != null && timeSinceLastUpdated < 5 * 1000
+        } //*TODO: make this accurate, also see if we shoudl be doing difference in ms instead of lastUpdatedDatStr
         variant="subtle"
         onClick={() => {
+          setLoading(true);
+          if (setComponentLoading != null) {
+            setComponentLoading(true);
+          }
           syncEntries()
             .then((result) => {
               setEntries(result);
-              localStorage.setItem(lastUpdatedKey, new Date().toISOString());
+              localStorage.setItem(lastUpdatedKey, Date.now().toString());
+              setTimeSinceLastUpdated(0);
+              setLoading(false);
+              if (setComponentLoading != null) {
+                setComponentLoading(false);
+              }
             })
             .catch((error) => {
+              setLoading(false);
+              if (setComponentLoading != null) {
+                setComponentLoading(false);
+              }
               console.error("Error during sync:", error);
             });
         }}
       >
         Refresh
       </Button>
-      <Field.HelperText>{`Last Updated: ${lastUpdatedStr}`}</Field.HelperText>
+      <Skeleton loading={loading}>
+        <Field.HelperText>
+          {`Last Updated: ${timeToHumanReadable(timeSinceLastUpdated)}`}
+        </Field.HelperText>
+      </Skeleton>
     </Field.Root>
   );
 };

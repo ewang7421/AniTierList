@@ -7,7 +7,10 @@ import {
   type User,
   ListWebsite,
   type OAuthFields,
+  ScoreFormat,
 } from "@/types/types";
+
+//TODO:  remove | null return types, they should error rather than null.
 
 // Here we define our query as a multi-line string
 // Storing it in a separate .graphql/.gql file is also possible
@@ -28,13 +31,16 @@ query ($userName: String, $type: MediaType, $status: MediaListStatus) { # Define
       avatar {
         medium
       }
+      mediaListOptions {
+        scoreFormat
+      }
     }
     lists {
       status
       isCustomList
       entries {
         id
-        score(format: POINT_10_DECIMAL)
+        score(format: POINT_5)
         media {
           id
           idMal
@@ -75,6 +81,9 @@ query ($userName: String) {
     avatar {
       medium
     }
+    mediaListOptions {
+      scoreFormat
+    }
   }
 }
 `;
@@ -93,7 +102,7 @@ query ($userName: String) {
 //TODO: refactor this or consider refactoring entire getAnilistData thing
 export async function getAnilistAuthenticatedUser(
   accessToken: string
-): Promise<User | null> {
+): Promise<User> {
   const query = `
 {
   Viewer {
@@ -101,6 +110,9 @@ export async function getAnilistAuthenticatedUser(
     name
     avatar {
       medium
+    }
+    mediaListOptions {
+      scoreFormat
     }
   }
 }
@@ -191,22 +203,24 @@ async function handleListResponse(response: Response) {
   }
 }
 
-function handleViewerData(data: any): User | null {
+//TODO: parameters here
+function handleViewerData(data: any): User {
   console.log(data);
 
   if (data.errors) {
     console.error("error");
-    return null;
+    throw Error("handleViewerData received errors");
   }
 
-  if (data.data.Viewer) {
+  if (data.data.Viewer != null) {
     return {
+      scoreFormat: data.data.Viewer.mediaListOptions.scoreFormat,
       name: data.data.Viewer.name,
       avatar: data.data.Viewer.avatar.medium,
       site: ListWebsite.AniList,
     };
   }
-  return null;
+  throw Error("Viewer/user is null in handleViewerData");
 }
 
 function handleUserData(data: AnilistUserResponse): User | null {
@@ -217,6 +231,7 @@ function handleUserData(data: AnilistUserResponse): User | null {
   }
   if (data.data.User) {
     return {
+      scoreFormat: data.data.User.mediaListOptions.scoreFormat,
       name: data.data.User.name,
       avatar: data.data.User.avatar.medium,
       site: ListWebsite.AniList,
@@ -251,13 +266,15 @@ function handleListData(data: AniListResponse): {
       title: entry.media.title.romaji,
       imageUrl: entry.media.coverImage.large,
       score: entry.score,
-      tier: 0,
+      tierIndex: null,
       isPreview: false,
       entryId: entry.id,
     })
   );
 
   const user: User = {
+    scoreFormat:
+      data.data.MediaListCollection.user.mediaListOptions.scoreFormat,
     name: data.data.MediaListCollection.user.name,
     avatar: data.data.MediaListCollection.user.avatar.medium,
     site: ListWebsite.AniList,

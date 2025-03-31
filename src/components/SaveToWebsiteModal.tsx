@@ -6,6 +6,9 @@ import {
   Heading,
   VStack,
   HStack,
+  Box,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import {
   DialogActionTrigger,
@@ -34,10 +37,16 @@ import { RefreshButton } from "./RefreshButton";
 
 const refreshTimeInterval = 1000 * 60 * 60;
 
+//TODO: remove prints and fix extra render whenever component opens and closes.
+
+// right now, i think we curerntly query anilist every time when this component mounts (only once per refresh)
+// to see if we are authed, I think we can just use the info from localstorage unless it's old
 export const SaveToWebsiteModal = () => {
   //TODO: can also put a warning if the user who is authenticated is different than the
   //      one in the tierlist
+  const lastUpdatedKey = "authenticatedLastUpdated";
   const { tierListModel } = useLoadedUser();
+  const [isLoading, setIsLoading] = useState(false); // technically should create an authed user provider here
   const [searchParams, setSearchParams] = useSearchParams();
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(
     JSON.parse(window.localStorage.getItem("authenticatedUser") || "null")
@@ -49,82 +58,93 @@ export const SaveToWebsiteModal = () => {
       | TierListEntry[]
       | null
   );
-  const lastUpdatedKey = "authenticatedLastUpdated";
-  let accessToken = searchParams.get("access_token");
-  if (accessToken == null) {
-    accessToken = localStorage.getItem("access_token");
-  }
-  const isAuthenticated =
-    authenticatedUser != null &&
-    authenticatedList != null &&
-    accessToken != null;
-  const [isSaving, setIsSaving] = useState(false);
-
+  const [accessToken, setAccessToken] = useState<string | null>(
+    window.localStorage.getItem("access_token")
+  );
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const renderTimeSinceLastUpdated = localStorage.getItem(lastUpdatedKey)
+    ? Date.now() - Number(localStorage.getItem(lastUpdatedKey))
+    : 0;
+  //TODO: shudl this be state? We want it to be updated at the initial render i gueses
   useEffect(() => {
-    const lastUpdated = window.localStorage.getItem(lastUpdatedKey);
-    if (lastUpdated != null) {
-      const lastUpdatedDate = new Date(lastUpdated);
-      const now = new Date();
-      if (now.getTime() - lastUpdatedDate.getTime() < refreshTimeInterval) {
-        const earlierTime =
-          now.getTime() < lastUpdatedDate.getTime() ? now : lastUpdatedDate;
-        // set the lastUpdated to now just in case there are weird inconsistencies of what the last updated time is
-        localStorage.setItem(lastUpdatedKey, earlierTime.toISOString());
-        return;
-      }
-    }
-    // Get the access token from searchparams
+    console.log("access_token useEffect");
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    let access_token = hashParams.get("access_token");
-    if (access_token != null) {
-      // set new access token to localstorage if found
-      localStorage.setItem("access_token", access_token);
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search
-      );
-    } else {
-      access_token = localStorage.getItem("access_token");
-    }
+    const newToken =
+      hashParams.get("access_token") ?? localStorage.getItem("access_token");
 
-    if (access_token == null) {
+    if (!newToken) {
       return;
     }
+    if (newToken !== accessToken) {
+      console.log("different access tokens:");
+      console.log("newToken: ", newToken);
+      console.log("accessToken: ", accessToken);
+      setAccessToken(newToken);
+    }
+    localStorage.setItem("access_token", newToken);
 
+    // Handle last updated timestamp
+    const lastUpdatedStr = localStorage.getItem(lastUpdatedKey);
+    if (lastUpdatedStr) {
+      const lastUpdatedDate = new Date(Number(lastUpdatedStr));
+      const timeSinceLastUpdated = Date.now() - lastUpdatedDate.getTime();
+
+      if (timeSinceLastUpdated > 0) {
+        localStorage.setItem(lastUpdatedKey, Date.now().toString());
+      }
+
+      if (timeSinceLastUpdated > refreshTimeInterval) {
+        //TODO: implement refetching authenticated lists
+      }
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    console.log("accessToken, renderTime");
+    if (
+      accessToken == null ||
+      renderTimeSinceLastUpdated < refreshTimeInterval
+    ) {
+      return;
+    }
     try {
+      //TODO: refactor maybe
       // Fetch user avatar asynchronously
-      getAnilistAuthenticatedUser(access_token)
+      getAnilistAuthenticatedUser(accessToken)
         .then((user) => {
-          //todo: if statement might be redundant, maybe should represent logic with errors
-          if (user) {
-            setAuthenticatedUser(user);
-            getList(user.site, user.name)
-              .then((mediaListCollection) =>
-                setAuthenticatedList(mediaListCollection.completedList)
-              )
-              .catch((error) => console.error(error));
-          }
-        })
+          setAuthenticatedUser(user);
+          getList(user.site, user.name)
+            .then((mediaListCollection) =>
+              setAuthenticatedList(mediaListCollection.completedList)
+            )
+            .catch((error) => console.error(error));
+        }) // TODO: why does it say avatar lol
         .catch((error) => console.error("Failed to fetch avatar:", error));
-      localStorage.setItem(lastUpdatedKey, new Date().toISOString());
+      localStorage.setItem(lastUpdatedKey, Date.now().toString());
     } catch (error) {
       console.error("Invalid token:", error);
     }
-  }, []);
+  }, [accessToken, renderTimeSinceLastUpdated]);
 
   useEffect(() => {
+    console.log("authenticatedUser");
     localStorage.setItem(
       "authenticatedUser",
       JSON.stringify(authenticatedUser)
     );
   }, [authenticatedUser]);
   useEffect(() => {
+    console.log("authenticatedList");
     localStorage.setItem(
       "authenticatedList",
       JSON.stringify(authenticatedList)
     );
   }, [authenticatedList]);
+  const isAuthenticated =
+    authenticatedUser != null &&
+    authenticatedList != null &&
+    accessToken != null;
+  console.log("render");
   return (
     <DialogRoot
       lazyMount
@@ -168,43 +188,57 @@ export const SaveToWebsiteModal = () => {
                   oldEntries={authenticatedList}
                   setEntries={setAuthenticatedList}
                   lastUpdatedKey={lastUpdatedKey}
+                  setComponentLoading={setIsLoading}
                 />
               </HStack>
-              <Table.Root size="sm">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>Title</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="end">
-                      Difference
-                    </Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="end">Old</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="end">New</Table.ColumnHeader>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {tierListModel.tiers.map((tier) => {
-                    return tier.entries.map((changedEntry) => {
-                      // Find the corresponding old entry
-                      const oldEntry = authenticatedList.find(
-                        (oldEntry) => oldEntry.id === changedEntry.id
-                      );
-                      const newScore = tier.maxScore;
-                      return (
-                        <Table.Row key={changedEntry.id}>
-                          <Table.Cell>{changedEntry.title}</Table.Cell>
-                          <Table.Cell textAlign="end">
-                            {oldEntry ? newScore - oldEntry.score : ""}
-                          </Table.Cell>
-                          <Table.Cell textAlign="end">
-                            {oldEntry ? oldEntry.score : ""}
-                          </Table.Cell>
-                          <Table.Cell textAlign="end">{newScore}</Table.Cell>
-                        </Table.Row>
-                      );
-                    });
-                  })}
-                </Table.Body>
-              </Table.Root>
+              <Box position={"relative"} w={"100%"} h={"100%"}>
+                <Table.Root size="sm">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.ColumnHeader>Title</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="end">
+                        Difference
+                      </Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="end">
+                        Old
+                      </Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="end">
+                        New
+                      </Table.ColumnHeader>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {tierListModel.tiers.map((tier) => {
+                      return tier.entries.map((changedEntry) => {
+                        // Find the corresponding old entry
+                        const oldEntry = authenticatedList.find(
+                          (oldEntry) => oldEntry.id === changedEntry.id
+                        );
+                        const newScore = tier.maxScore;
+                        return (
+                          <Table.Row key={changedEntry.id}>
+                            <Table.Cell>{changedEntry.title}</Table.Cell>
+                            <Table.Cell textAlign="end">
+                              {oldEntry ? newScore - oldEntry.score : ""}
+                            </Table.Cell>
+                            <Table.Cell textAlign="end">
+                              {oldEntry ? oldEntry.score : ""}
+                            </Table.Cell>
+                            <Table.Cell textAlign="end">{newScore}</Table.Cell>
+                          </Table.Row>
+                        );
+                      });
+                    })}
+                  </Table.Body>
+                </Table.Root>
+                {(isSaving || isLoading) && (
+                  <Box pos="absolute" inset="0" bg="bg/80">
+                    <Center h="full">
+                      <Spinner color="teal.500" />
+                    </Center>
+                  </Box>
+                )}
+              </Box>
             </VStack>
           ) : (
             <Flex direction="column" gap={2}>
@@ -236,20 +270,50 @@ export const SaveToWebsiteModal = () => {
           </DialogActionTrigger>
           <Button
             variant="subtle"
-            onClick={() => {
+            onClick={async () => {
               if (isAuthenticated && accessToken != null) {
                 try {
+                  console.log("clicked");
                   setIsSaving(true);
-                  saveEntries(
+                  await saveEntries(
                     authenticatedUser.site,
                     tierListModel.tiers,
                     accessToken
                   );
                 } catch (error) {
+                  setIsSaving(false);
                   throw error;
                 } finally {
+                }
+                try {
+                  // Fetch user avatar asynchronously
+                  const access_token = localStorage.getItem("access_token");
+                  if (access_token == null) {
+                    throw Error("no access token");
+                  }
+                  await getAnilistAuthenticatedUser(access_token)
+                    .then((user) => {
+                      // TODO: if statement might be redundant, maybe should represent logic with errors
+                      if (user) {
+                        setAuthenticatedUser(user);
+                        getList(user.site, user.name)
+                          .then((mediaListCollection) =>
+                            setAuthenticatedList(
+                              mediaListCollection.completedList
+                            )
+                          )
+                          .catch((error) => console.error(error));
+                      }
+                    }) // TODO: why does it say avatar lol
+                    .catch((error) =>
+                      console.error("Failed to fetch avatar:", error)
+                    );
+                  localStorage.setItem(lastUpdatedKey, Date.now().toString());
+                } catch (error) {
+                  console.error("Invalid token:", error);
                   setIsSaving(false);
                 }
+                setIsSaving(false);
               }
             }}
             loading={isSaving}

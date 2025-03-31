@@ -94,7 +94,7 @@ export function createOAuthURI(baseURL: string, options: OAuthFields): string {
   return url.toString();
 }
 
-export function saveEntries(
+export async function saveEntries(
   site: ListWebsite,
   // while we currently have score as a number, considering making a type for it since anilist supports many different scoring systems.
   // Also, this changedEntries structure might be bad, consider changing it to just be stored in the tierlistentyr type (this pattern exists in other areas of the codebsae)
@@ -103,12 +103,18 @@ export function saveEntries(
 ): Promise<void> {
   try {
     if (site === ListWebsite.AniList) {
+      const delay = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
       for (let i = 0; i < tiers.length; i++) {
         // do you do this empty list check here? or in saveAnilistEntries
         if (tiers[i].entries.length < 1) {
           continue;
         }
+        console.log("Processing tier: ", tiers[i].maxScore);
         saveAnilistEntries(tiers[i].entries, tiers[i].maxScore, accessToken);
+        if (i < tiers.length - 1) {
+          await delay(100);
+        }
       }
       return Promise.resolve();
     } else {

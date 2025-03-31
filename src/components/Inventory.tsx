@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Entry } from "@/components/Entry";
-import { InventoryModel, ListWebsite, User } from "../types/types";
-import { Flex, HStack, SimpleGrid, VStack } from "@chakra-ui/react";
+import {
+  Flex,
+  HStack,
+  SimpleGrid,
+  VStack,
+  Box,
+  Spinner,
+  Center,
+} from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   PaginationItems,
@@ -17,7 +24,7 @@ const lastUpdatedStr: string = localStorage.getItem(
   "AniTierList:Inventory:lastUpdated"
 );
 export const Inventory = () => {
-  const { loadedUser, loadUserList, tierListModel, setTierListModel } =
+  const { loadedUser, loadUserList, tierListModel, isLoading } =
     useLoadedUser();
   const columnCount = 10;
   const rowsPerPage = 5;
@@ -57,32 +64,45 @@ export const Inventory = () => {
       <ListLookup
         user={loadedUser}
         loadListCallback={loadUserList}
-        setEntries={() => {}}
+        setEntries={() => {}} //TODO: what is this?
       />
-      <SortableContext items={tierListModel.inventory.entries}>
-        <Flex direction="column" align="center">
-          <SimpleGrid columns={columnCount} ref={setNodeRef} minHeight={"50vh"}>
-            {visibleEntries.map((entry) => (
-              <Entry key={entry.id} entry={entry} containerId={"inventory"} />
-            ))}
-          </SimpleGrid>
-          {tierListModel.inventory.entries.length > 0 && (
-            <PaginationRoot
-              count={tierListModel.inventory.entries.length}
-              pageSize={pageSize}
-              onPageChange={(e) => {
-                setPage(e.page);
-              }}
+      <Box position="relative">
+        <SortableContext items={tierListModel.inventory.entries}>
+          <Flex direction="column" align="center">
+            <SimpleGrid
+              columns={columnCount}
+              ref={setNodeRef}
+              minHeight={"50vh"}
             >
-              <HStack>
-                <PaginationPrevTrigger />
-                <PaginationItems />
-                <PaginationNextTrigger />
-              </HStack>
-            </PaginationRoot>
-          )}
-        </Flex>
-      </SortableContext>
+              {visibleEntries.map((entry) => (
+                <Entry key={entry.id} entry={entry} containerId={"inventory"} />
+              ))}
+            </SimpleGrid>
+            {tierListModel.inventory.entries.length > 0 && (
+              <PaginationRoot
+                count={tierListModel.inventory.entries.length}
+                pageSize={pageSize}
+                onPageChange={(e) => {
+                  setPage(e.page);
+                }}
+              >
+                <HStack>
+                  <PaginationPrevTrigger />
+                  <PaginationItems />
+                  <PaginationNextTrigger />
+                </HStack>
+              </PaginationRoot>
+            )}
+          </Flex>
+        </SortableContext>
+        {isLoading && (
+          <Box pos="absolute" inset="0" bg="bg/80">
+            <Center h="full">
+              <Spinner color="teal.500" />
+            </Center>
+          </Box>
+        )}
+      </Box>
     </VStack>
   );
 };

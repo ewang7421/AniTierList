@@ -1,3 +1,4 @@
+import { ScoreFormat } from "./scoreFormat";
 export enum ListWebsite {
   AniList = "anilist",
   MyAnimeList = "myanimelist",
@@ -45,6 +46,7 @@ export type InventoryModel = {
 
 // The model for the tierlist
 export type TierListModel = {
+  scoreFormat: ScoreFormat | null;
   inventory: InventoryModel;
   tiers: TierModel[];
   dragging?: DraggedEntry;
@@ -81,6 +83,9 @@ export interface MediaListCollection {
     avatar: {
       medium: string;
     };
+    mediaListOptions: {
+      scoreFormat: ScoreFormat;
+    };
   };
   lists: List[];
 }
@@ -95,6 +100,9 @@ export interface AnilistUserResponse {
   errors?: AnilistError[];
   data: {
     User: {
+      mediaListOptions: {
+        scoreFormat: ScoreFormat;
+      };
       name: string;
       avatar: {
         medium: string;
@@ -114,6 +122,7 @@ export interface User {
   name: string;
   avatar: string;
   site: ListWebsite;
+  scoreFormat: ScoreFormat;
 }
 
 export interface AccessTokenInfo {

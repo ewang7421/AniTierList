@@ -7,6 +7,8 @@ export interface LoadedUserContextType {
   loadUserList: (site: ListWebsite, username: string) => Promise<void>;
   tierListModel: TierListModel;
   setTierListModel: React.Dispatch<React.SetStateAction<TierListModel>>;
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 const cachedLoadedUser: User | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:loadedUser") || "null"
@@ -19,19 +21,35 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
   const [loadedUser, setLoadedUser] = useState<User | null>(cachedLoadedUser); // TODO: have some warning telling user that we will reset the state of the tierlist
   const [tierListModel, setTierListModel] = useState<TierListModel>(
     cachedTierListModel || {
+      scoreFormat: null,
       inventory: { entries: [] },
       tiers: [
         // the inventory is at index 0
         { entries: [], name: "S", minScore: 8.5, maxScore: 10 },
-        { entries: [], name: "A", minScore: 7, maxScore: 8.5 },
-        { entries: [], name: "B", minScore: 5.5, maxScore: 7 },
-        { entries: [], name: "C", minScore: 4, maxScore: 5.5 },
-        { entries: [], name: "D", minScore: 2.5, maxScore: 4 },
-        { entries: [], name: "E", minScore: 1, maxScore: 2.5 },
+        { entries: [], name: "A", minScore: 7, maxScore: 8 },
+        { entries: [], name: "B", minScore: 5.5, maxScore: 6 },
+        { entries: [], name: "C", minScore: 4, maxScore: 4 },
+        { entries: [], name: "D", minScore: 2.5, maxScore: 3 },
+        { entries: [], name: "E", minScore: 1, maxScore: 2 },
         { entries: [], name: "F", minScore: 1, maxScore: 1 },
       ],
     }
   );
+
+  /* 
+        { entries: [], name: ":)", minScore: 8.5, maxScore: 3 },
+        { entries: [], name: ":|", minScore: 7, maxScore: 2 },
+        { entries: [], name: ":(", minScore: 5.5, maxScore: 1 },
+  
+  */
+  /*
+        { entries: [], name: "S", minScore: 8.5, maxScore: 5 },
+        { entries: [], name: "A", minScore: 7, maxScore: 4 },
+        { entries: [], name: "B", minScore: 5.5, maxScore: 3 },
+        { entries: [], name: "C", minScore: 4, maxScore: 2 },
+        { entries: [], name: "F", minScore: 2.5, maxScore: 1 },
+  */
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const loadUserList = async (site: ListWebsite, username: string) => {
     if (username.trim().length < 2) {
       throw Error("Username must be at least 2 characters");
@@ -58,7 +76,12 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (user) {
-        setLoadedUser(user);
+        setLoadedUser((prev) => {
+          if (prev?.scoreFormat != null) {
+            return { ...user, scoreFormat: prev.scoreFormat };
+          }
+          return user;
+        });
       }
     } catch (error) {
       //TODO: this console error is only to prevent eslint error
@@ -68,7 +91,14 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
   };
   return (
     <LoadedUserContext.Provider
-      value={{ loadedUser, loadUserList, tierListModel, setTierListModel }}
+      value={{
+        loadedUser,
+        loadUserList,
+        tierListModel,
+        setTierListModel,
+        isLoading,
+        setIsLoading,
+      }}
     >
       {children}
     </LoadedUserContext.Provider>
