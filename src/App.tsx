@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { LoadedUserProvider } from "@/context/LoadedUserProvider";
 
+const baseUrl = import.meta.env.BASE_URL;
 function App() {
   return (
     <Provider>
@@ -13,7 +14,7 @@ function App() {
         <Grid minH="100vh" p={3}>
           <ColorModeButton justifySelf="flex-end" />
           <LoadedUserProvider>
-            <Router basename="/AniTierList/">
+            <Router basename={baseUrl}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
               </Routes>
