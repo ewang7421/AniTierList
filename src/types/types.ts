@@ -1,6 +1,6 @@
 import { ScoreFormat } from "./scoreFormat";
 export enum ListWebsite {
-  AniList = "anilist",
+  AniList = "AniList",
   MyAnimeList = "myanimelist",
 }
 export const ListWebsiteDisplayNames: Record<ListWebsite, string> = {
@@ -15,15 +15,14 @@ export const enum DroppableType {
 }
 // A single entry in the list
 export type TierListEntry = {
-  // id number for the show on anilist/mal
+  // id number for the show on AniList/mal
   id: number;
   idMal?: number;
   title: string;
   imageUrl: string;
   score: number;
-  tierIndex: "inventory" | number;
 
-  //anilist entry id, probably should be refactored
+  //AniList entry id, probably should be refactored
   entryId: number;
 };
 // Represents a single tier in the tierlist
@@ -51,71 +50,6 @@ export type TierListModel = {
   tiers: TierModel[];
   dragging?: DraggedEntry;
 };
-
-export interface Media {
-  id: number;
-  idMal?: number;
-  coverImage: {
-    large: string;
-    medium: string;
-  };
-  title: {
-    romaji: string;
-  };
-}
-
-export interface Entry {
-  score: number;
-  media: Media;
-  id: number;
-}
-
-export interface List {
-  status: string;
-  isCustomList: boolean;
-  entries: Entry[];
-}
-
-export interface MediaListCollection {
-  user: {
-    id: number;
-    name: string;
-    avatar: {
-      medium: string;
-    };
-    mediaListOptions: {
-      scoreFormat: ScoreFormat;
-    };
-  };
-  lists: List[];
-}
-
-export interface AniListResponse {
-  data: {
-    MediaListCollection: MediaListCollection;
-  };
-}
-
-export interface AnilistUserResponse {
-  errors?: AnilistError[];
-  data: {
-    User: {
-      mediaListOptions: {
-        scoreFormat: ScoreFormat;
-      };
-      name: string;
-      avatar: {
-        medium: string;
-      };
-    } | null;
-  };
-}
-
-interface AnilistError {
-  message: string;
-  status: string;
-  //locations: [];
-}
 
 // TODO: probably should add id here
 export interface User {

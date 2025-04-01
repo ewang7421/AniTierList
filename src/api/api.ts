@@ -1,9 +1,9 @@
 import {
-  getAnilistEntries,
-  getAnilistUserByUsername,
-  AnilistOAuthFields,
-  saveAnilistEntries,
-} from "@/api/anilist";
+  getAniListEntries,
+  getAniListUserByUsername,
+  AniListOAuthFields,
+  saveAniListEntries,
+} from "@/api/anilist.ts";
 import {
   ListWebsite,
   TierListEntry,
@@ -18,7 +18,7 @@ export async function getList(
 ): Promise<{ completedList: TierListEntry[]; user: User }> {
   try {
     if (site === ListWebsite.AniList) {
-      return getAnilistEntries(username);
+      return getAniListEntries(username);
     } else {
       throw new Error("Unsupported platform");
     }
@@ -34,7 +34,7 @@ export async function getUserByUsername(
 ): Promise<User | null> {
   try {
     if (site === ListWebsite.AniList) {
-      return getAnilistUserByUsername(username);
+      return getAniListUserByUsername(username);
     } else {
       throw new Error("Unsupported platform");
     }
@@ -45,9 +45,10 @@ export async function getUserByUsername(
 }
 
 export function getLogoURL(site: ListWebsite): string {
+  console.log(site);
   try {
     if (site === ListWebsite.AniList) {
-      return "https://docs.anilist.co/anilist.png";
+      return "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/AniList_logo.svg/512px-AniList_logo.svg.png?20220330011134";
     } else {
       throw new Error("Unsupported platform");
     }
@@ -61,8 +62,8 @@ export function getAuthURL(site: ListWebsite): string {
   try {
     if (site === ListWebsite.AniList) {
       return createOAuthURI(
-        "https://anilist.co/api/v2/oauth/authorize",
-        AnilistOAuthFields
+        "https://AniList.co/api/v2/oauth/authorize",
+        AniListOAuthFields
       );
     } else {
       throw new Error("Unsupported platform");
@@ -96,7 +97,7 @@ export function createOAuthURI(baseURL: string, options: OAuthFields): string {
 
 export async function saveEntries(
   site: ListWebsite,
-  // while we currently have score as a number, considering making a type for it since anilist supports many different scoring systems.
+  // while we currently have score as a number, considering making a type for it since AniList supports many different scoring systems.
   // Also, this changedEntries structure might be bad, consider changing it to just be stored in the tierlistentyr type (this pattern exists in other areas of the codebsae)
   tiers: TierModel[],
   accessToken: string
@@ -107,12 +108,12 @@ export async function saveEntries(
         new Promise((resolve) => setTimeout(resolve, ms));
       console.log("saving: ", tiers);
       for (let i = 0; i < tiers.length; i++) {
-        // do you do this empty list check here? or in saveAnilistEntries
+        // do you do this empty list check here? or in saveAniListEntries
         if (tiers[i].entries.length < 1) {
           continue;
         }
         console.log("Processing tier: ", tiers[i].maxScore);
-        saveAnilistEntries(tiers[i].entries, tiers[i].maxScore, accessToken);
+        saveAniListEntries(tiers[i].entries, tiers[i].maxScore, accessToken);
         if (i < tiers.length - 1) {
           await delay(100);
         }

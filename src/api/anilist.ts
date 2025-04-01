@@ -1,14 +1,98 @@
 import {
   type TierListEntry,
-  type AniListResponse,
-  type AnilistUserResponse,
-  type List,
-  type Entry,
   type User,
   ListWebsite,
   type OAuthFields,
-  ScoreFormat,
 } from "@/types/types";
+import { ScoreFormat } from "@/types/scoreFormat";
+
+//TODO: Refactor where types live, currently they are all in types.ts but it should be better
+// to move AniList types to here possibly.
+
+interface Media {
+  id: number;
+  idMal?: number;
+  coverImage: {
+    large: string;
+    medium: string;
+  };
+  title: {
+    romaji: string;
+  };
+}
+
+interface Entry {
+  score: number;
+  media: Media;
+  id: number;
+}
+
+interface List {
+  status: string;
+  isCustomList: boolean;
+  entries: Entry[];
+}
+
+interface MediaListCollection {
+  user: {
+    id: number;
+    name: string;
+    avatar: {
+      medium: string;
+    };
+    mediaListOptions: {
+      scoreFormat: ScoreFormat;
+    };
+  };
+  lists: List[];
+}
+
+type AniListResponseType =
+  | AniListResponse
+  | AniListUserResponse
+  | AniListViewerResponse;
+
+interface AniListResponse {
+  data: {
+    MediaListCollection: MediaListCollection;
+  };
+}
+
+interface AniListUserResponse {
+  errors?: AniListError[];
+  data: {
+    User: {
+      mediaListOptions: {
+        scoreFormat: ScoreFormat;
+      };
+      name: string;
+      avatar: {
+        medium: string;
+      };
+    } | null;
+  };
+}
+
+interface AniListViewerResponse {
+  errors?: AniListError[];
+  data: {
+    Viewer: {
+      mediaListOptions: {
+        scoreFormat: ScoreFormat;
+      };
+      name: string;
+      avatar: {
+        medium: string;
+      };
+    } | null;
+  };
+}
+
+interface AniListError {
+  message: string;
+  status: string;
+  //locations: [];
+}
 
 //TODO:  remove | null return types, they should error rather than null.
 
@@ -19,7 +103,7 @@ import {
 // TODO: probabyly forceSingleCompleted in the query, the only argument
 // against that would be to allow users to sort by their custom completed
 // scheme (idk how it works, i think by format like tv, etc)
-export async function getAnilistEntries(
+export async function getAniListEntries(
   username: string
 ): Promise<{ completedList: TierListEntry[]; user: User }> {
   const query = `
@@ -63,7 +147,7 @@ query ($userName: String, $type: MediaType, $status: MediaListStatus) { # Define
     type: "ANIME",
     status: "COMPLETED",
   };
-  return getAnilistData<{ completedList: TierListEntry[]; user: User }>(
+  return getAniListData<{ completedList: TierListEntry[]; user: User }>(
     query,
     variables,
     handleListResponse,
@@ -71,7 +155,7 @@ query ($userName: String, $type: MediaType, $status: MediaListStatus) { # Define
   );
 }
 
-export async function getAnilistUserByUsername(
+export async function getAniListUserByUsername(
   username: string
 ): Promise<User | null> {
   const query = `
@@ -91,7 +175,7 @@ query ($userName: String) {
     userName: username,
   };
 
-  return getAnilistData<User | null>(
+  return getAniListData<User | null>(
     query,
     variables,
     handleUserResponse,
@@ -99,8 +183,8 @@ query ($userName: String) {
   );
 }
 
-//TODO: refactor this or consider refactoring entire getAnilistData thing
-export async function getAnilistAuthenticatedUser(
+//TODO: refactor this or consider refactoring entire getAniListData thing
+export async function getAniListAuthenticatedUser(
   accessToken: string
 ): Promise<User> {
   const query = `
@@ -117,7 +201,7 @@ export async function getAnilistAuthenticatedUser(
   }
 }
   `;
-  const url = "https://graphql.anilist.co",
+  const url = "https://graphql.AniList.co",
     options = {
       method: "POST",
       headers: {
@@ -136,7 +220,7 @@ export async function getAnilistAuthenticatedUser(
 
 //TODO: probably refactor access token to a getAccessToken function rather than passing it
 // guaranteed to have at least 1 entry
-export async function saveAnilistEntries(
+export async function saveAniListEntries(
   changedEntries: TierListEntry[],
   newScore: number,
   accessToken: string
@@ -153,7 +237,7 @@ mutation UpdateMediaListEntries($score: Float, $ids: [Int]) {
     ids: changedEntries.map((entry) => entry.entryId),
   };
 
-  const url = "https://graphql.anilist.co",
+  const url = "https://graphql.AniList.co",
     options = {
       method: "POST",
       headers: {
@@ -194,17 +278,21 @@ async function handleUserResponse(response: Response) {
   return response.ok ? json : Promise.reject(Error("User '' not found"));
 }
 
-async function handleListResponse(response: Response) {
+async function handleListResponse(
+  response: Response
+): Promise<AniListResponse> {
   const json = await response.json();
   if (response.ok) {
     return json;
   } else if (response.status === 404) {
     return Promise.reject(Error("User not found"));
+  } else {
+    return Promise.reject(Error("Unknown Error"));
   }
 }
 
 //TODO: parameters here
-function handleViewerData(data: any): User {
+function handleViewerData(data: AniListViewerResponse): User {
   console.log(data);
 
   if (data.errors) {
@@ -223,7 +311,9 @@ function handleViewerData(data: any): User {
   throw Error("Viewer/user is null in handleViewerData");
 }
 
-function handleUserData(data: AnilistUserResponse): User | null {
+function handleUserData(data: AniListResponseType): User | null {
+  //TODO: impleemnt type gurad here maybe?
+  data = data as AniListUserResponse;
   console.log(data);
   if (data.errors) {
     console.error("error");
@@ -249,10 +339,11 @@ function handleUserData(data: AnilistUserResponse): User | null {
     "There can only be one completed list"
   ); */
 // let ret = { userId: data.data.MediaListCollection.user.id, entries: entries };
-function handleListData(data: AniListResponse): {
+function handleListData(data: AniListResponseType): {
   completedList: TierListEntry[];
   user: User;
 } {
+  data = data as AniListResponse;
   console.log(data);
   const completedList = data.data.MediaListCollection.lists.filter(
     (list: List) => !list.isCustomList && list.status === "COMPLETED"
@@ -266,7 +357,6 @@ function handleListData(data: AniListResponse): {
       title: entry.media.title.romaji,
       imageUrl: entry.media.coverImage.large,
       score: entry.score,
-      tierIndex: null,
       isPreview: false,
       entryId: entry.id,
     })
@@ -289,13 +379,13 @@ function handleError(error: unknown): void {
   throw error;
 }
 
-async function getAnilistData<T>(
+async function getAniListData<T>(
   query: string,
   variables: object,
-  handleResponse: (response: Response) => Promise<T>,
-  handleData: (data: any) => T
+  handleResponse: (response: Response) => Promise<AniListResponseType>,
+  handleData: (data: AniListResponseType) => T
 ): Promise<T> {
-  const url = "https://graphql.anilist.co",
+  const url = "https://graphql.AniList.co",
     options = {
       method: "POST",
       headers: {
@@ -317,7 +407,7 @@ async function getAnilistData<T>(
   }
 }
 
-export const AnilistOAuthFields: OAuthFields = {
+export const AniListOAuthFields: OAuthFields = {
   clientId: "24903",
   responseType: "token",
 };

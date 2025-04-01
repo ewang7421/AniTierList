@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 
 interface RefreshButtonProps {
   user: User;
-  oldEntries: TierListEntry[];
-  setEntries: (entries: TierListEntry[]) => void;
+  oldEntries: { tier: number | null; entry: TierListEntry }[];
+  setEntries: (
+    entries: { tier: number | null; entry: TierListEntry }[]
+  ) => void;
   lastUpdatedKey: string;
   setComponentLoading: React.Dispatch<React.SetStateAction<boolean>> | null;
 }
@@ -40,30 +42,36 @@ export const RefreshButton = ({
   lastUpdatedKey,
   setComponentLoading,
 }: RefreshButtonProps) => {
-  const syncEntries = async (): Promise<TierListEntry[]> => {
+  const syncEntries = async (): Promise<
+    { tier: number | null; entry: TierListEntry }[]
+  > => {
     if (!user) {
       return oldEntries;
     }
     try {
       const updated = await getList(user.site, user.name);
-      const cachedMap = new Map(
-        oldEntries.map((oldEntry) => [oldEntry.id, oldEntry])
+      const oldMap = new Map(
+        oldEntries.map((oldEntry) => [oldEntry.entry.id, oldEntry])
       );
-      const updatedMap = new Map(
-        updated.completedList.map((entry) => [entry.id, entry])
-      );
+      const newMap: Map<number, { tier: number | null; entry: TierListEntry }> =
+        new Map(
+          updated.completedList.map((newEntry) => [
+            newEntry.id,
+            { tier: null, entry: newEntry },
+          ])
+        );
       // keep the tier index
-      for (const [id, newEntry] of updatedMap) {
-        const oldEntry = cachedMap.get(id);
+      for (const [id, newEntry] of newMap) {
+        const oldEntry = oldMap.get(id);
         if (oldEntry != null) {
-          updatedMap.set(id, { ...newEntry, tierIndex: oldEntry.tierIndex });
+          newMap.set(id, { ...newEntry, tier: oldEntry.tier });
         }
       }
 
       //TODO: check which title you are actually comparing
       // Step 5: Convert Map back to an array for sorting
-      return Array.from(updatedMap.values()).sort((a, b) =>
-        a.title.localeCompare(b.title)
+      return Array.from(newMap.values()).sort((a, b) =>
+        a.entry.title.localeCompare(b.entry.title)
       ); // Sort alphabetically by id
     } catch (error) {
       console.error("Error during sync:", error);

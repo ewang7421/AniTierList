@@ -3,7 +3,6 @@ import { TierListModel, User, ListWebsite, TierModel } from "@/types/types";
 import { getList } from "@/api/api";
 import { LoadedUserContext } from "./LoadedUserContext";
 import { ScoreFormat } from "@/types/scoreFormat";
-import { List } from "@chakra-ui/react";
 export interface LoadedUserContextType {
   loadedUser: User | null;
   loadUserList: (site: ListWebsite, username: string) => Promise<void>;
@@ -61,6 +60,18 @@ const default_tiers_map = new Map<ScoreFormat, TierModel[]>([
       { entries: [], name: "E", minScore: 1, maxScore: 3 },
       { entries: [], name: "F", minScore: 1, maxScore: 2 },
       { entries: [], name: "TRASH", minScore: 1, maxScore: 1 },
+
+      /*
+
+
+      S: 9.5-10
+      A: 8.5-9.5
+      B: 7-8.5
+      C: 6-7
+      D: 5-6
+      F: 0-5 
+
+      */
     ],
   ],
   [
@@ -76,11 +87,9 @@ const default_tiers_map = new Map<ScoreFormat, TierModel[]>([
   [
     ScoreFormat.POINT_3,
     [
-      { entries: [], name: "S", minScore: 8.5, maxScore: 5 },
-      { entries: [], name: "A", minScore: 8.5, maxScore: 4 },
-      { entries: [], name: "B", minScore: 8.5, maxScore: 3 },
-      { entries: [], name: "C", minScore: 7, maxScore: 2 },
-      { entries: [], name: "F", minScore: 5.5, maxScore: 1 },
+      { entries: [], name: ":)", minScore: 8.5, maxScore: 3 },
+      { entries: [], name: ":|", minScore: 8.5, maxScore: 2 },
+      { entries: [], name: ":(", minScore: 8.5, maxScore: 1 },
     ],
   ],
 ]);

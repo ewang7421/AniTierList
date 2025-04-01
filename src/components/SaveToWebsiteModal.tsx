@@ -9,7 +9,6 @@ import {
   Box,
   Center,
   Spinner,
-  List,
 } from "@chakra-ui/react";
 import {
   DialogActionTrigger,
@@ -31,7 +30,7 @@ import {
 import { getAuthURL, getList, saveEntries } from "@/api/api";
 import { useEffect } from "react";
 import { useState } from "react";
-import { getAnilistAuthenticatedUser } from "@/api/anilist";
+import { getAniListAuthenticatedUser } from "@/api/anilist";
 import { useSearchParams } from "react-router-dom";
 import { useLoadedUser } from "@/context/LoadedUserContext";
 import { RefreshButton } from "./RefreshButton";
@@ -40,7 +39,7 @@ const refreshTimeInterval = 1000 * 60 * 60;
 
 //TODO: remove prints and fix extra render whenever component opens and closes.
 
-// right now, i think we curerntly query anilist every time when this component mounts (only once per refresh)
+// right now, i think we curerntly query AniList every time when this component mounts (only once per refresh)
 // to see if we are authed, I think we can just use the info from localstorage unless it's old
 export const SaveToWebsiteModal = () => {
   //TODO: can also put a warning if the user who is authenticated is different than the
@@ -70,6 +69,7 @@ export const SaveToWebsiteModal = () => {
     authenticatedUser != null &&
     authenticatedList != null &&
     accessToken != null;
+  // TODO: if i delete from localstorage i think state doensn't get updated os this won't change, the user will still be logged in , mayb eis fine
   /*
   console.log("render");
   console.log("authenticatedUser: ", authenticatedUser);
@@ -122,7 +122,7 @@ export const SaveToWebsiteModal = () => {
     try {
       //TODO: refactor maybe
       // Fetch user avatar asynchronously
-      getAnilistAuthenticatedUser(accessToken)
+      getAniListAuthenticatedUser(accessToken)
         .then((user) => {
           console.log("authUser: ", user);
           setAuthenticatedUser(user);
@@ -194,8 +194,15 @@ export const SaveToWebsiteModal = () => {
                 <Heading>Confirm Changes</Heading>
                 <RefreshButton
                   user={authenticatedUser}
-                  oldEntries={authenticatedList}
-                  setEntries={setAuthenticatedList}
+                  oldEntries={authenticatedList.map((oldEntry) => ({
+                    tier: null,
+                    entry: oldEntry,
+                  }))}
+                  setEntries={(newEntries) => {
+                    setAuthenticatedList(
+                      newEntries.map((newEntryData) => newEntryData.entry)
+                    );
+                  }}
                   lastUpdatedKey={lastUpdatedKey}
                   setComponentLoading={setIsLoading}
                 />
@@ -226,8 +233,6 @@ export const SaveToWebsiteModal = () => {
                             (oldEntry) => oldEntry.id === newEntry.id
                           );
                           if (!oldEntry || newScore === oldEntry.score) {
-                            console.log("oldEntry: ", oldEntry);
-                            console.log("newEntry: ", newEntry);
                             return null;
                           }
                           return (
@@ -276,7 +281,7 @@ export const SaveToWebsiteModal = () => {
                 asChild
               >
                 <a href={getAuthURL(ListWebsite.AniList)}>
-                  Log in with Anilist
+                  Log in with AniList
                 </a>
               </Button>
             </Flex>
@@ -315,6 +320,7 @@ export const SaveToWebsiteModal = () => {
                   setIsSaving(false);
                   throw error;
                 } finally {
+                  console.log("TODO: Not yet implemented");
                 }
                 try {
                   // Fetch user avatar asynchronously
@@ -322,7 +328,7 @@ export const SaveToWebsiteModal = () => {
                   if (access_token == null) {
                     throw Error("no access token");
                   }
-                  await getAnilistAuthenticatedUser(access_token)
+                  await getAniListAuthenticatedUser(access_token)
                     .then((user) => {
                       // TODO: if statement might be redundant, maybe should represent logic with errors
                       if (user) {

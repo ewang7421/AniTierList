@@ -169,35 +169,34 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
           <Heading>{user.name}</Heading>
           <Image src={getLogoURL(user.site)} width={"50px"} height={"50px"} />
           {
-            //TODO: show refresh available time like on opgg
+            // TODO: show refresh available time like on opgg
           }
           <RefreshButton
             user={user}
             oldEntries={[
               ...tierListModel.inventory.entries.map((entry) => ({
-                ...entry,
-                tierIndex: "inventory" as TierListEntry["tierIndex"],
+                tier: null,
+                entry: entry,
               })),
               ...tierListModel.tiers.flatMap((tier, index) =>
-                tier.entries.map((entry) => ({ ...entry, tierIndex: index }))
+                tier.entries.map((entry) => ({ tier: index, entry: entry }))
               ),
             ]}
             setEntries={(newEntries) =>
               setTierListModel((prev) => {
                 console.log("newEntries", newEntries);
                 const newInventory = {
-                  entries: newEntries.filter(
-                    (entry) =>
-                      entry.tierIndex === "inventory" || entry.tierIndex == null
-                  ),
+                  entries: newEntries
+                    .filter((entryData) => entryData.tier === null)
+                    .map((entryData) => entryData.entry),
                 };
                 const newTiers = prev.tiers.map((prevTier, index) => ({
                   ...prevTier,
-                  entries: prevTier.entries.filter((entry) => {
-                    const newEntry = newEntries.find(
-                      (newEntry) => newEntry.id === entry.id
+                  entries: prevTier.entries.filter((prevEntry) => {
+                    const newEntryData = newEntries.find(
+                      (newEntryData) => newEntryData.entry.id === prevEntry.id
                     );
-                    return newEntry != null && newEntry.tierIndex === index;
+                    return newEntryData != null && newEntryData.tier === index;
                   }),
                 }));
                 return { ...prev, tiers: newTiers, inventory: newInventory };
@@ -214,7 +213,7 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
 
 const listWebsites = createListCollection({
   items: [
-    { label: "Anilist", value: ListWebsite.AniList.toString() },
+    { label: "AniList", value: ListWebsite.AniList.toString() },
     { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
   ],
 });

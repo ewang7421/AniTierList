@@ -19,10 +19,6 @@ import {
 } from "@/components/ui/pagination";
 import { ListLookup } from "@/components/ListLookup";
 import { useLoadedUser } from "@/context/LoadedUserContext";
-
-const lastUpdatedStr: string = localStorage.getItem(
-  "AniTierList:Inventory:lastUpdated"
-);
 export const Inventory = () => {
   const { loadedUser, loadUserList, tierListModel, isLoading } =
     useLoadedUser();

@@ -7,25 +7,20 @@ import {
   Center,
   Spinner,
 } from "@chakra-ui/react";
-import { TierModel } from "../types/types";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Tier } from "@/components/Tier";
 import { SaveToWebsiteModal } from "@/components/SaveToWebsiteModal";
 import { useLoadedUser } from "@/context/LoadedUserContext";
 
-interface TierlistProps {
-  tierModels: TierModel[];
-}
-
-export const Tierlist = ({ tierModels }: TierlistProps) => {
-  const { isLoading } = useLoadedUser();
+export const Tierlist = () => {
+  const { isLoading, tierListModel } = useLoadedUser();
 
   return (
     <Flex w="100%" flexDirection="column">
       <Text>Tierlist</Text>
       <Box position="relative">
-        {tierModels &&
-          tierModels.map((model, index) => (
+        {tierListModel.tiers &&
+          tierListModel.tiers.map((model, index) => (
             <SortableContext key={index} items={model.entries}>
               <Tier tierModel={model} index={index} />
             </SortableContext>
