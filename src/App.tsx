@@ -13,7 +13,7 @@ function App() {
         <Grid minH="100vh" p={3}>
           <ColorModeButton justifySelf="flex-end" />
           <LoadedUserProvider>
-            <Router basename="/AniTierList">
+            <Router basename="/AniTierList/">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
               </Routes>
