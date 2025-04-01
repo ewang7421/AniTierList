@@ -9,6 +9,7 @@ import {
   Box,
   Center,
   Spinner,
+  List,
 } from "@chakra-ui/react";
 import {
   DialogActionTrigger,
@@ -65,6 +66,16 @@ export const SaveToWebsiteModal = () => {
   const renderTimeSinceLastUpdated = localStorage.getItem(lastUpdatedKey)
     ? Date.now() - Number(localStorage.getItem(lastUpdatedKey))
     : 0;
+  const isAuthenticated =
+    authenticatedUser != null &&
+    authenticatedList != null &&
+    accessToken != null;
+  /*
+  console.log("render");
+  console.log("authenticatedUser: ", authenticatedUser);
+  console.log("authenticatedList: ", authenticatedList);
+  console.log("accessToken: ", accessToken);
+  console.log("isAuthenticated: ", isAuthenticated);*/
   //TODO: shudl this be state? We want it to be updated at the initial render i gueses
   useEffect(() => {
     console.log("access_token useEffect");
@@ -103,15 +114,17 @@ export const SaveToWebsiteModal = () => {
     console.log("accessToken, renderTime");
     if (
       accessToken == null ||
-      renderTimeSinceLastUpdated < refreshTimeInterval
+      (renderTimeSinceLastUpdated < refreshTimeInterval && isAuthenticated)
     ) {
       return;
     }
+    console.log("accessToken, sdfdsfrenderTime");
     try {
       //TODO: refactor maybe
       // Fetch user avatar asynchronously
       getAnilistAuthenticatedUser(accessToken)
         .then((user) => {
+          console.log("authUser: ", user);
           setAuthenticatedUser(user);
           getList(user.site, user.name)
             .then((mediaListCollection) =>
@@ -124,7 +137,7 @@ export const SaveToWebsiteModal = () => {
     } catch (error) {
       console.error("Invalid token:", error);
     }
-  }, [accessToken, renderTimeSinceLastUpdated]);
+  }, [accessToken, renderTimeSinceLastUpdated, isAuthenticated]);
 
   useEffect(() => {
     console.log("authenticatedUser");
@@ -140,11 +153,7 @@ export const SaveToWebsiteModal = () => {
       JSON.stringify(authenticatedList)
     );
   }, [authenticatedList]);
-  const isAuthenticated =
-    authenticatedUser != null &&
-    authenticatedList != null &&
-    accessToken != null;
-  console.log("render");
+
   return (
     <DialogRoot
       lazyMount
@@ -208,27 +217,36 @@ export const SaveToWebsiteModal = () => {
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
-                    {tierListModel.tiers.map((tier) => {
-                      return tier.entries.map((changedEntry) => {
-                        // Find the corresponding old entry
-                        const oldEntry = authenticatedList.find(
-                          (oldEntry) => oldEntry.id === changedEntry.id
-                        );
-                        const newScore = tier.maxScore;
-                        return (
-                          <Table.Row key={changedEntry.id}>
-                            <Table.Cell>{changedEntry.title}</Table.Cell>
-                            <Table.Cell textAlign="end">
-                              {oldEntry ? newScore - oldEntry.score : ""}
-                            </Table.Cell>
-                            <Table.Cell textAlign="end">
-                              {oldEntry ? oldEntry.score : ""}
-                            </Table.Cell>
-                            <Table.Cell textAlign="end">{newScore}</Table.Cell>
-                          </Table.Row>
-                        );
-                      });
-                    })}
+                    {tierListModel.tiers
+                      .map((tier) => {
+                        return tier.entries.map((newEntry) => {
+                          const newScore = tier.maxScore;
+                          // Find the corresponding old entry
+                          const oldEntry = authenticatedList.find(
+                            (oldEntry) => oldEntry.id === newEntry.id
+                          );
+                          if (!oldEntry || newScore === oldEntry.score) {
+                            console.log("oldEntry: ", oldEntry);
+                            console.log("newEntry: ", newEntry);
+                            return null;
+                          }
+                          return (
+                            <Table.Row key={newEntry.id}>
+                              <Table.Cell>{newEntry.title}</Table.Cell>
+                              <Table.Cell textAlign="end">
+                                {oldEntry ? newScore - oldEntry.score : ""}
+                              </Table.Cell>
+                              <Table.Cell textAlign="end">
+                                {oldEntry ? oldEntry.score : ""}
+                              </Table.Cell>
+                              <Table.Cell textAlign="end">
+                                {newScore}
+                              </Table.Cell>
+                            </Table.Row>
+                          );
+                        });
+                      })
+                      .flat()}
                   </Table.Body>
                 </Table.Root>
                 {(isSaving || isLoading) && (
@@ -275,9 +293,22 @@ export const SaveToWebsiteModal = () => {
                 try {
                   console.log("clicked");
                   setIsSaving(true);
+
+                  const changedEntries = tierListModel.tiers.map((tier) => {
+                    return {
+                      ...tier,
+                      entries: tier.entries.filter((newEntry) => {
+                        // Find the corresponding old entry
+                        const oldEntry = authenticatedList.find(
+                          (oldEntry) => oldEntry.id === newEntry.id
+                        );
+                        return newEntry.score === oldEntry?.score;
+                      }),
+                    };
+                  });
                   await saveEntries(
                     authenticatedUser.site,
-                    tierListModel.tiers,
+                    changedEntries,
                     accessToken
                   );
                 } catch (error) {
@@ -295,6 +326,7 @@ export const SaveToWebsiteModal = () => {
                     .then((user) => {
                       // TODO: if statement might be redundant, maybe should represent logic with errors
                       if (user) {
+                        console.log("authUSERDOWN: ", user);
                         setAuthenticatedUser(user);
                         getList(user.site, user.name)
                           .then((mediaListCollection) =>

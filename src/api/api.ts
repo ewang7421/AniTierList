@@ -105,6 +105,7 @@ export async function saveEntries(
     if (site === ListWebsite.AniList) {
       const delay = (ms: number) =>
         new Promise((resolve) => setTimeout(resolve, ms));
+      console.log("saving: ", tiers);
       for (let i = 0; i < tiers.length; i++) {
         // do you do this empty list check here? or in saveAnilistEntries
         if (tiers[i].entries.length < 1) {

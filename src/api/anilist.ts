@@ -40,7 +40,7 @@ query ($userName: String, $type: MediaType, $status: MediaListStatus) { # Define
       isCustomList
       entries {
         id
-        score(format: POINT_5)
+        score
         media {
           id
           idMal

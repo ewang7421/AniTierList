@@ -26,7 +26,7 @@ export const Tierlist = ({ tierModels }: TierlistProps) => {
       <Box position="relative">
         {tierModels &&
           tierModels.map((model, index) => (
-            <SortableContext key={model.name} items={model.entries}>
+            <SortableContext key={index} items={model.entries}>
               <Tier tierModel={model} index={index} />
             </SortableContext>
           ))}
