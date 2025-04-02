@@ -46,7 +46,6 @@ export const SaveToWebsiteModal = () => {
   //      one in the tierlist
   const lastUpdatedKey = "authenticatedLastUpdated";
   const { tierListModel } = useLoadedUser();
-  const [isLoading, setIsLoading] = useState(false); // technically should create an authed user provider here
   const [searchParams, setSearchParams] = useSearchParams();
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(
     JSON.parse(window.localStorage.getItem("authenticatedUser") || "null")
@@ -61,6 +60,7 @@ export const SaveToWebsiteModal = () => {
   const [accessToken, setAccessToken] = useState<string | null>(
     window.localStorage.getItem("access_token")
   );
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const renderTimeSinceLastUpdated = localStorage.getItem(lastUpdatedKey)
     ? Date.now() - Number(localStorage.getItem(lastUpdatedKey))
@@ -69,38 +69,28 @@ export const SaveToWebsiteModal = () => {
     authenticatedUser != null &&
     authenticatedList != null &&
     accessToken != null;
-  // TODO: if i delete from localstorage i think state doensn't get updated os this won't change, the user will still be logged in , mayb eis fine
-  /*
-  console.log("render");
-  console.log("authenticatedUser: ", authenticatedUser);
-  console.log("authenticatedList: ", authenticatedList);
-  console.log("accessToken: ", accessToken);
-  console.log("isAuthenticated: ", isAuthenticated);*/
   //TODO: shudl this be state? We want it to be updated at the initial render i gueses
   useEffect(() => {
-    console.log("access_token useEffect");
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const newToken =
-      hashParams.get("access_token") ?? localStorage.getItem("access_token");
-
+      hashParams.get("access_token") ?? localStorage.getItem("access_token"); //TODO: magic numbers/strings
     if (!newToken) {
+      localStorage.removeItem("access_token");
       return;
     }
     if (newToken !== accessToken) {
-      console.log("different access tokens:");
-      console.log("newToken: ", newToken);
-      console.log("accessToken: ", accessToken);
       setAccessToken(newToken);
+      localStorage.setItem("access_token", newToken);
     }
-    localStorage.setItem("access_token", newToken);
 
     // Handle last updated timestamp
-    const lastUpdatedStr = localStorage.getItem(lastUpdatedKey);
-    if (lastUpdatedStr) {
-      const lastUpdatedDate = new Date(Number(lastUpdatedStr));
+    const lastUpdated = localStorage.getItem(lastUpdatedKey);
+    if (lastUpdated) {
+      const lastUpdatedDate = new Date(Number(lastUpdated));
       const timeSinceLastUpdated = Date.now() - lastUpdatedDate.getTime();
 
-      if (timeSinceLastUpdated > 0) {
+      if (timeSinceLastUpdated < 0) {
+        // if the last updated time is in the future, just set it to now to prevent errors
         localStorage.setItem(lastUpdatedKey, Date.now().toString());
       }
 
@@ -111,28 +101,28 @@ export const SaveToWebsiteModal = () => {
   }, [accessToken]);
 
   useEffect(() => {
-    console.log("accessToken, renderTime");
-    if (
-      accessToken == null ||
-      (renderTimeSinceLastUpdated < refreshTimeInterval && isAuthenticated)
-    ) {
+    if (!isAuthenticated) {
       return;
     }
-    console.log("accessToken, sdfdsfrenderTime");
+    if (renderTimeSinceLastUpdated < refreshTimeInterval) {
+      return;
+    }
     try {
       //TODO: refactor maybe
-      // Fetch user avatar asynchronously
       getAniListAuthenticatedUser(accessToken)
         .then((user) => {
-          console.log("authUser: ", user);
           setAuthenticatedUser(user);
           getList(user.site, user.name)
             .then((mediaListCollection) =>
               setAuthenticatedList(mediaListCollection.completedList)
             )
-            .catch((error) => console.error(error));
+            .catch((error) =>
+              console.error("Failed to fetch Authenticated user's list.", error)
+            );
         }) // TODO: why does it say avatar lol
-        .catch((error) => console.error("Failed to fetch avatar:", error));
+        .catch((error) =>
+          console.error("Failed to fetch authenticated user:", error)
+        );
       localStorage.setItem(lastUpdatedKey, Date.now().toString());
     } catch (error) {
       console.error("Invalid token:", error);

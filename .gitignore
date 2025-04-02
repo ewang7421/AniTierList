@@ -25,6 +25,4 @@ dist-ssr
 
 
 # temp
-
-src/Test.tsx
-src/TestItem.tsx
+.env
