@@ -11,7 +11,7 @@ import { SortableContext } from "@dnd-kit/sortable";
 import { Tier } from "@/components/Tier";
 import { SaveToWebsiteModal } from "@/components/SaveToWebsiteModal";
 import { useLoadedUser } from "@/context/LoadedUserContext";
-
+import { ClearButton } from "./ClearButton";
 export const Tierlist = () => {
   const { isLoading, tierListModel } = useLoadedUser();
 
@@ -34,6 +34,7 @@ export const Tierlist = () => {
         )}
       </Box>
       <HStack alignSelf={"center"}>
+        <ClearButton />
         <SaveToWebsiteModal />
         <Button variant="subtle">Download</Button>
       </HStack>

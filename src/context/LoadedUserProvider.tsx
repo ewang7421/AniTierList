@@ -94,6 +94,19 @@ const default_tiers_map = new Map<ScoreFormat, TierModel[]>([
   ],
 ]);
 
+const starting_default_tiers = [
+  { entries: [], name: "SSS", minScore: 8.5, maxScore: 100 },
+  { entries: [], name: "SS", minScore: 8.5, maxScore: 90 },
+  { entries: [], name: "S", minScore: 8.5, maxScore: 80 },
+  { entries: [], name: "A", minScore: 7, maxScore: 70 },
+  { entries: [], name: "B", minScore: 5.5, maxScore: 60 },
+  { entries: [], name: "C", minScore: 4, maxScore: 50 },
+  { entries: [], name: "D", minScore: 2.5, maxScore: 40 },
+  { entries: [], name: "E", minScore: 1, maxScore: 30 },
+  { entries: [], name: "F", minScore: 1, maxScore: 20 },
+  { entries: [], name: "TRASH", minScore: 1, maxScore: 10 },
+];
+
 const cachedTierListModel: TierListModel | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:TierListModel") || "null"
 ) as TierListModel | null;
@@ -103,18 +116,7 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
     cachedTierListModel || {
       scoreFormat: null,
       inventory: { entries: [] },
-      tiers: [
-        { entries: [], name: "SSS", minScore: 8.5, maxScore: 100 },
-        { entries: [], name: "SS", minScore: 8.5, maxScore: 90 },
-        { entries: [], name: "S", minScore: 8.5, maxScore: 80 },
-        { entries: [], name: "A", minScore: 7, maxScore: 70 },
-        { entries: [], name: "B", minScore: 5.5, maxScore: 60 },
-        { entries: [], name: "C", minScore: 4, maxScore: 50 },
-        { entries: [], name: "D", minScore: 2.5, maxScore: 40 },
-        { entries: [], name: "E", minScore: 1, maxScore: 30 },
-        { entries: [], name: "F", minScore: 1, maxScore: 20 },
-        { entries: [], name: "TRASH", minScore: 1, maxScore: 10 },
-      ],
+      tiers: starting_default_tiers,
     }
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);

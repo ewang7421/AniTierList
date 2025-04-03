@@ -72,7 +72,7 @@ export const RefreshButton = ({
       // Step 5: Convert Map back to an array for sorting
       return Array.from(newMap.values()).sort((a, b) =>
         a.entry.title.localeCompare(b.entry.title)
-      ); // Sort alphabetically by id
+      ); // Sort alphabetically by title
     } catch (error) {
       console.error("Error during sync:", error);
       return oldEntries;
