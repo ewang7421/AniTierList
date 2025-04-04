@@ -4,7 +4,6 @@ import { Entry } from "@/components/Entry";
 import {
   Flex,
   HStack,
-  SimpleGrid,
   VStack,
   Box,
   Spinner,
@@ -20,7 +19,6 @@ import {
 } from "@/components/ui/pagination";
 import { ListLookup } from "@/components/ListLookup";
 import { useLoadedUser } from "@/context/LoadedUserContext";
-import { resolvePath } from "react-router-dom";
 export const Inventory = () => {
   const { loadedUser, loadUserList, tierListModel, isLoading, entrySize } =
     useLoadedUser();

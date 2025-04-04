@@ -6,7 +6,8 @@ const size_medium = { w: 100, h: 140 };
 const size_large = { w: 150, h: 210 };
 
 export const SizeSlider = () => {
-  const { entrySize, setEntrySize } = useLoadedUser();
+  //TODO: set the initial value of the slider based on the entrysize, and also stuff with localstorage
+  const { setEntrySize } = useLoadedUser();
   return (
     <Slider.Root
       width="200px"

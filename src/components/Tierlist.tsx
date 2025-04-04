@@ -1,12 +1,4 @@
-import {
-  Text,
-  Flex,
-  Box,
-  Button,
-  HStack,
-  Center,
-  Spinner,
-} from "@chakra-ui/react";
+import { Flex, Box, Button, HStack, Center, Spinner } from "@chakra-ui/react";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Tier } from "@/components/Tier";
 import { SaveToWebsiteModal } from "@/components/SaveToWebsiteModal";
