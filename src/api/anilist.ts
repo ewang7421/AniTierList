@@ -6,7 +6,7 @@ import {
 } from "@/types/types";
 import { ScoreFormat } from "@/types/scoreFormat";
 
-const clientId = import.meta.env.ANILIST_CLIENT_ID;
+const clientId = import.meta.env.VITE_ANILIST_CLIENT_ID;
 
 //TODO: Refactor where types live, currently they are all in types.ts but it should be better
 // to move AniList types to here possibly.
