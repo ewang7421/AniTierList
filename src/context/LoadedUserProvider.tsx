@@ -11,6 +11,8 @@ export interface LoadedUserContextType {
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   default_tiers_map: Map<ScoreFormat, TierModel[]>;
+  entrySize: { w: number; h: number };
+  setEntrySize: React.Dispatch<React.SetStateAction<{ w: number; h: number }>>;
 }
 const cachedLoadedUser: User | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:loadedUser") || "null"
@@ -93,31 +95,39 @@ const default_tiers_map = new Map<ScoreFormat, TierModel[]>([
     ],
   ],
 ]);
+const starting_default_tiers = [
+  { entries: [], name: "SSS", minScore: 8.5, maxScore: 100 },
+  { entries: [], name: "SS", minScore: 8.5, maxScore: 90 },
+  { entries: [], name: "S", minScore: 8.5, maxScore: 80 },
+  { entries: [], name: "A", minScore: 7, maxScore: 70 },
+  { entries: [], name: "B", minScore: 5.5, maxScore: 60 },
+  { entries: [], name: "C", minScore: 4, maxScore: 50 },
+  { entries: [], name: "D", minScore: 2.5, maxScore: 40 },
+  { entries: [], name: "E", minScore: 1, maxScore: 30 },
+  { entries: [], name: "F", minScore: 1, maxScore: 20 },
+  { entries: [], name: "TRASH", minScore: 1, maxScore: 10 },
+];
 
 const cachedTierListModel: TierListModel | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:TierListModel") || "null"
 ) as TierListModel | null;
+
+const defaultEntrySize = { w: 150, h: 210 };
+
 export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
   const [loadedUser, setLoadedUser] = useState<User | null>(cachedLoadedUser); // TODO: have some warning telling user that we will reset the state of the tierlist
   const [tierListModel, setTierListModel] = useState<TierListModel>(
     cachedTierListModel || {
       scoreFormat: null,
       inventory: { entries: [] },
-      tiers: [
-        { entries: [], name: "SSS", minScore: 8.5, maxScore: 100 },
-        { entries: [], name: "SS", minScore: 8.5, maxScore: 90 },
-        { entries: [], name: "S", minScore: 8.5, maxScore: 80 },
-        { entries: [], name: "A", minScore: 7, maxScore: 70 },
-        { entries: [], name: "B", minScore: 5.5, maxScore: 60 },
-        { entries: [], name: "C", minScore: 4, maxScore: 50 },
-        { entries: [], name: "D", minScore: 2.5, maxScore: 40 },
-        { entries: [], name: "E", minScore: 1, maxScore: 30 },
-        { entries: [], name: "F", minScore: 1, maxScore: 20 },
-        { entries: [], name: "TRASH", minScore: 1, maxScore: 10 },
-      ],
+      tiers: starting_default_tiers,
     }
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  //TODO: should this be somewhere else? maybe entry size is more of a gui thing
+  const [entrySize, setEntrySize] = useState<{ w: number; h: number }>(
+    defaultEntrySize
+  );
   const loadUserList = async (site: ListWebsite, username: string) => {
     if (username.trim().length < 2) {
       throw Error("Username must be at least 2 characters");
@@ -186,6 +196,8 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         setIsLoading,
         default_tiers_map,
+        entrySize,
+        setEntrySize,
       }}
     >
       {children}

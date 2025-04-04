@@ -3,6 +3,7 @@ import { SortableContext } from "@dnd-kit/sortable";
 import { Entry } from "@/components/Entry";
 import { TierModel } from "@/types/types";
 import { useDroppable } from "@dnd-kit/core";
+import { useLoadedUser } from "@/context/LoadedUserContext";
 
 interface TierProps {
   tierModel: TierModel;
@@ -14,9 +15,14 @@ export const Tier = ({ tierModel, index }: TierProps) => {
     id: index,
     data: { containerId: index },
   });
+  const { entrySize } = useLoadedUser();
   return (
     <Flex borderWidth="0px" key={tierModel.name}>
-      <Center borderWidth="2px" minW="100px" minH="210px">
+      <Center
+        borderWidth="2px"
+        minWidth={entrySize.w.toString() + "px"}
+        minHeight={entrySize.h.toString() + "px"}
+      >
         <Heading>{tierModel.name}</Heading>
       </Center>
       <SortableContext items={tierModel.entries}>

@@ -4,11 +4,11 @@ import { Entry } from "@/components/Entry";
 import {
   Flex,
   HStack,
-  SimpleGrid,
   VStack,
   Box,
   Spinner,
   Center,
+  Grid,
 } from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -20,11 +20,13 @@ import {
 import { ListLookup } from "@/components/ListLookup";
 import { useLoadedUser } from "@/context/LoadedUserContext";
 export const Inventory = () => {
-  const { loadedUser, loadUserList, tierListModel, isLoading } =
+  const { loadedUser, loadUserList, tierListModel, isLoading, entrySize } =
     useLoadedUser();
   const columnCount = 10;
-  const rowsPerPage = 5;
-  const pageSize = columnCount * rowsPerPage;
+  const rowCount = 5;
+  const pageSize = columnCount * rowCount;
+
+  const minHeight = entrySize.h * rowCount;
 
   const [page, setPage] = useState(1);
 
@@ -65,15 +67,16 @@ export const Inventory = () => {
       <Box position="relative">
         <SortableContext items={tierListModel.inventory.entries}>
           <Flex direction="column" align="center">
-            <SimpleGrid
-              columns={columnCount}
+            <Grid
+              templateColumns={`repeat(${columnCount}, 1fr)`}
               ref={setNodeRef}
-              minHeight={"50vh"}
+              minHeight={minHeight.toString() + "px"}
+              alignContent={"start"}
             >
               {visibleEntries.map((entry) => (
                 <Entry key={entry.id} entry={entry} containerId={"inventory"} />
               ))}
-            </SimpleGrid>
+            </Grid>
             {tierListModel.inventory.entries.length > 0 && (
               <PaginationRoot
                 count={tierListModel.inventory.entries.length}
