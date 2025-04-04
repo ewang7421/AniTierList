@@ -13,6 +13,7 @@ import {
 import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
 import { useLoadedUser } from "@/context/LoadedUserContext";
+import { PointerRectCollisionDetectionAlgorithm } from "@/dnd/PointerRectCollisionDetectionAlgorithm";
 
 // when getting from localstorage, put a last updated and a force update on lists (maybe even rate limit the force update)
 export const Dashboard = () => {
@@ -168,7 +169,11 @@ export const Dashboard = () => {
     );
   }, [loadedUser]);
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      collisionDetection={PointerRectCollisionDetectionAlgorithm}
+    >
       <Box>
         <VStack>
           <Tierlist />

@@ -4,6 +4,7 @@ import { Entry } from "@/components/Entry";
 import { TierModel } from "@/types/types";
 import { useDroppable } from "@dnd-kit/core";
 import { useLoadedUser } from "@/context/LoadedUserContext";
+import { PointerRectCollisionDetectionAlgorithm } from "@/dnd/PointerRectCollisionDetectionAlgorithm";
 
 interface TierProps {
   tierModel: TierModel;
