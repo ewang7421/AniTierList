@@ -81,7 +81,7 @@ export function createOAuthURI(baseURL: string, options: OAuthFields): string {
     typeof options.clientId === "undefined" ||
     typeof options.responseType === "undefined"
   ) {
-    throw new Error();
+    throw new Error("invalid options");
   }
 
   url.searchParams.set("client_id", options.clientId.toString());
