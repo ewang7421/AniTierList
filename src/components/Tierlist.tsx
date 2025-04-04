@@ -12,12 +12,13 @@ import { Tier } from "@/components/Tier";
 import { SaveToWebsiteModal } from "@/components/SaveToWebsiteModal";
 import { useLoadedUser } from "@/context/LoadedUserContext";
 import { ClearButton } from "./ClearButton";
+import { SizeSlider } from "./SizeSlider";
 export const Tierlist = () => {
   const { isLoading, tierListModel } = useLoadedUser();
 
   return (
     <Flex w="100%" flexDirection="column">
-      <Text>Tierlist</Text>
+      <SizeSlider />
       <Box position="relative">
         {tierListModel.tiers &&
           tierListModel.tiers.map((model, index) => (

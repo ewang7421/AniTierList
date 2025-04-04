@@ -11,6 +11,8 @@ export interface LoadedUserContextType {
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   default_tiers_map: Map<ScoreFormat, TierModel[]>;
+  entrySize: { w: number; h: number };
+  setEntrySize: React.Dispatch<React.SetStateAction<{ w: number; h: number }>>;
 }
 const cachedLoadedUser: User | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:loadedUser") || "null"
@@ -93,7 +95,6 @@ const default_tiers_map = new Map<ScoreFormat, TierModel[]>([
     ],
   ],
 ]);
-
 const starting_default_tiers = [
   { entries: [], name: "SSS", minScore: 8.5, maxScore: 100 },
   { entries: [], name: "SS", minScore: 8.5, maxScore: 90 },
@@ -110,6 +111,9 @@ const starting_default_tiers = [
 const cachedTierListModel: TierListModel | null = JSON.parse(
   window.localStorage.getItem("AniTierList:Dashboard:TierListModel") || "null"
 ) as TierListModel | null;
+
+const defaultEntrySize = { w: 150, h: 210 };
+
 export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
   const [loadedUser, setLoadedUser] = useState<User | null>(cachedLoadedUser); // TODO: have some warning telling user that we will reset the state of the tierlist
   const [tierListModel, setTierListModel] = useState<TierListModel>(
@@ -120,6 +124,10 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
     }
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  //TODO: should this be somewhere else? maybe entry size is more of a gui thing
+  const [entrySize, setEntrySize] = useState<{ w: number; h: number }>(
+    defaultEntrySize
+  );
   const loadUserList = async (site: ListWebsite, username: string) => {
     if (username.trim().length < 2) {
       throw Error("Username must be at least 2 characters");
@@ -188,6 +196,8 @@ export const LoadedUserProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         setIsLoading,
         default_tiers_map,
+        entrySize,
+        setEntrySize,
       }}
     >
       {children}
