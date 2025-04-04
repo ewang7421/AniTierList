@@ -19,7 +19,6 @@ permissions:
 concurrency:
   group: "pages"
   cancel-in-progress: true
-
 jobs:
   # Single deploy job since we're just deploying
   deploy:
@@ -39,6 +38,8 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+        env: 
+          VITE_ANILIST_CLIENT_ID: ${{ secrets.VITE_ANILIST_CLIENT_ID }}
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
