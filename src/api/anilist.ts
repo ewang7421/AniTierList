@@ -6,7 +6,8 @@ import {
 } from "@/types/types";
 import { ScoreFormat } from "@/types/scoreFormat";
 
-const clientId = import.meta.env.VITE_ANILIST_CLIENT_ID;
+const anilistClientId = import.meta.env.VITE_ANILIST_CLIENT_ID;
+console.log(anilistClientId);
 
 //TODO: Refactor where types live, currently they are all in types.ts but it should be better
 // to move AniList types to here possibly.
@@ -410,6 +411,6 @@ async function getAniListData<T>(
 }
 
 export const AniListOAuthFields: OAuthFields = {
-  clientId: clientId,
+  clientId: anilistClientId,
   responseType: "token",
 };
