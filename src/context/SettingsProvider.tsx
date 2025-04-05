@@ -1,11 +1,11 @@
 import { Settings } from "@/types/types";
 import { SettingsContext } from "./SettingsContext";
-import { ReactNode, useState } from "react";
+import React, { ReactNode, useState } from "react";
 import { defaultEntrySize } from "@/config/sizes";
 
 export interface SettingsContextType {
   settings: Settings;
-  setSettings: (settings: Settings) => void;
+  setSettings: React.Dispatch<React.SetStateAction<Settings>>;
 }
 
 const cachedSettings: Settings | null = JSON.parse(
@@ -17,11 +17,11 @@ const defaultSettings: Settings = {
 };
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const [settings, _setSettings] = useState<Settings>(
+  const [settings, setSettings] = useState<Settings>(
     cachedSettings || defaultSettings
   );
-  const setSettings = (settings: Settings) => {
-    _setSettings(settings);
+  const _setSettings = (settings: Settings) => {
+    setSettings(settings);
     // TODO: figure out if this pattern is best for settings.
     // do we wrap the set callback with a modification to localstorage?
     // or do we rewrite it every time

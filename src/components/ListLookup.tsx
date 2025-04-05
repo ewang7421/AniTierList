@@ -1,9 +1,8 @@
-import { ListWebsite, TierListEntry } from "@/types/types";
+import { ListWebsite } from "@/types/types";
 import {
   HStack,
   SelectItem,
   SelectValueText,
-  createListCollection,
   Input,
   Button,
   Field,
@@ -18,18 +17,24 @@ import { getLogoURL } from "@/api/api";
 import { RefreshButton } from "./RefreshButton";
 import { useTierListModel } from "@/context/TierListModelContext";
 import { useLoadedUser } from "@/context/LoadedUserContext";
+import {
+  flattenTierListEntries,
+  listWebsites,
+  loadFlatEntries,
+} from "@/utils/TierListModelUtils";
 //TODO: allow user to authenticate to get lists because of private entries
+
+const dropDownLocalStorageKey = "lookupDropDown";
 
 export const ListLookup = () => {
   const { loadedUser, loadUser } = useLoadedUser();
   const { tierListModel, setTierListModel, isLoading, setIsLoading } =
     useTierListModel();
-  const [username, setUsername] = useState("");
   const [listWebsite, setListWebsite] = useState<string[]>(
-    JSON.parse(
-      window.localStorage.getItem("AniTierList:lookupDropdown:selected") || "[]"
-    )
+    JSON.parse(window.localStorage.getItem(dropDownLocalStorageKey) || "[]")
   );
+  const [username, setUsername] = useState("");
+
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
 
@@ -72,7 +77,7 @@ export const ListLookup = () => {
   };
   useEffect(() => {
     window.localStorage.setItem(
-      "AniTierList:lookupDropdown:selected",
+      dropDownLocalStorageKey,
       JSON.stringify(listWebsite)
     );
   }, [listWebsite]);
@@ -85,7 +90,7 @@ export const ListLookup = () => {
           <Select.Root
             variant="subtle"
             collection={listWebsites}
-            value={[listWebsite.toString()]}
+            value={listWebsite}
             onValueChange={(e) => {
               setListWebsite(e.value);
             }}
@@ -168,39 +173,11 @@ export const ListLookup = () => {
             width={"50px"}
             height={"50px"}
           />
-          {
-            // TODO: show refresh available time like on opgg
-          }
           <RefreshButton
             user={loadedUser}
-            oldEntries={[
-              ...tierListModel.inventory.entries.map((entry) => ({
-                tier: null,
-                entry: entry,
-              })),
-              ...tierListModel.tiers.flatMap((tier, index) =>
-                tier.entries.map((entry) => ({ tier: index, entry: entry }))
-              ),
-            ]}
+            oldEntries={flattenTierListEntries(tierListModel)}
             setEntries={(newEntries) =>
-              setTierListModel((prev) => {
-                console.log("newEntries", newEntries);
-                const newInventory = {
-                  entries: newEntries
-                    .filter((entryData) => entryData.tier === null)
-                    .map((entryData) => entryData.entry),
-                };
-                const newTiers = prev.tiers.map((prevTier, index) => ({
-                  ...prevTier,
-                  entries: prevTier.entries.filter((prevEntry) => {
-                    const newEntryData = newEntries.find(
-                      (newEntryData) => newEntryData.entry.id === prevEntry.id
-                    );
-                    return newEntryData != null && newEntryData.tier === index;
-                  }),
-                }));
-                return { ...prev, tiers: newTiers, inventory: newInventory };
-              })
+              setTierListModel((prev) => loadFlatEntries(prev, newEntries))
             }
             lastUpdatedKey="AniTierList:Inventory:lastUpdated"
             setComponentLoading={setIsLoading}
@@ -210,10 +187,3 @@ export const ListLookup = () => {
     </VStack>
   );
 };
-
-const listWebsites = createListCollection({
-  items: [
-    { label: "AniList", value: ListWebsite.AniList.toString() },
-    { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
-  ],
-});

@@ -80,8 +80,5 @@ export interface OAuthFields {
 }
 
 export interface Settings {
-  dropDownSelected: ListWebsite | null;
-  //TODO: should dropdownselected be here? It's not exactly a setting,
-  // rather a property/state of the application
   entrySize: { w: number; h: number };
 }
