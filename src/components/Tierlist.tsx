@@ -2,11 +2,11 @@ import { Flex, Box, Button, HStack, Center, Spinner } from "@chakra-ui/react";
 import { SortableContext } from "@dnd-kit/sortable";
 import { Tier } from "@/components/Tier";
 import { SaveToWebsiteModal } from "@/components/SaveToWebsiteModal";
-import { useLoadedUser } from "@/context/LoadedUserContext";
 import { ClearButton } from "./ClearButton";
 import { SizeSlider } from "./SizeSlider";
+import { useTierListModel } from "@/context/TierListModelContext";
 export const Tierlist = () => {
-  const { isLoading, tierListModel } = useLoadedUser();
+  const { isLoading, tierListModel } = useTierListModel();
 
   return (
     <Flex w="100%" flexDirection="column">

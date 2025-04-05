@@ -1,8 +1,8 @@
-import { useLoadedUser } from "@/context/LoadedUserContext";
+import { useTierListModel } from "@/context/TierListModelContext";
 import { Button } from "@chakra-ui/react";
 
 export const ClearButton = () => {
-  const { setTierListModel } = useLoadedUser();
+  const { setTierListModel } = useTierListModel();
   return (
     // TODO: fix this styling
     <Button

@@ -14,18 +14,16 @@ import {
   Select,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { User } from "@/types/types";
 import { getLogoURL } from "@/api/api";
 import { RefreshButton } from "./RefreshButton";
+import { useTierListModel } from "@/context/TierListModelContext";
 import { useLoadedUser } from "@/context/LoadedUserContext";
 //TODO: allow user to authenticate to get lists because of private entries
-interface ListLookupProps {
-  user: User | null;
-  loadListCallback: (site: ListWebsite, username: string) => Promise<void>;
-  setEntries: (entries: TierListEntry[]) => void;
-}
 
-export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
+export const ListLookup = () => {
+  const { loadedUser, loadUser } = useLoadedUser();
+  const { tierListModel, setTierListModel, isLoading, setIsLoading } =
+    useTierListModel();
   const [username, setUsername] = useState("");
   const [listWebsite, setListWebsite] = useState<string[]>(
     JSON.parse(
@@ -34,8 +32,6 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
   );
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
-  const { tierListModel, setTierListModel, isLoading, setIsLoading } =
-    useLoadedUser();
 
   // wrapper because select's event represents a list of selected items, not a singular one
   const fetchListWrapper = async () => {
@@ -62,7 +58,7 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
     }
     setIsLoading(true);
     try {
-      await loadListCallback(site, username);
+      await loadUser(site, username, setTierListModel);
     } catch (error) {
       if (error instanceof Error) {
         console.log(error.message);
@@ -156,7 +152,7 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
           get
         </Button>
       </HStack>
-      {user && (
+      {loadedUser && (
         <Flex
           width="100%"
           direction="row"
@@ -165,14 +161,18 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
           position="relative"
           gap={4}
         >
-          <Image src={user.avatar} width={"50px"} height={"50px"} />
-          <Heading>{user.name}</Heading>
-          <Image src={getLogoURL(user.site)} width={"50px"} height={"50px"} />
+          <Image src={loadedUser.avatar} width={"50px"} height={"50px"} />
+          <Heading>{loadedUser.name}</Heading>
+          <Image
+            src={getLogoURL(loadedUser.site)}
+            width={"50px"}
+            height={"50px"}
+          />
           {
             // TODO: show refresh available time like on opgg
           }
           <RefreshButton
-            user={user}
+            user={loadedUser}
             oldEntries={[
               ...tierListModel.inventory.entries.map((entry) => ({
                 tier: null,

@@ -3,8 +3,7 @@ import { SortableContext } from "@dnd-kit/sortable";
 import { Entry } from "@/components/Entry";
 import { TierModel } from "@/types/types";
 import { useDroppable } from "@dnd-kit/core";
-import { useLoadedUser } from "@/context/LoadedUserContext";
-import { PointerRectCollisionDetectionAlgorithm } from "@/dnd/PointerRectCollisionDetectionAlgorithm";
+import { useSettings } from "@/context/SettingsContext";
 
 interface TierProps {
   tierModel: TierModel;
@@ -16,13 +15,13 @@ export const Tier = ({ tierModel, index }: TierProps) => {
     id: index,
     data: { containerId: index },
   });
-  const { entrySize } = useLoadedUser();
+  const { settings } = useSettings();
   return (
     <Flex borderWidth="0px" key={tierModel.name}>
       <Center
         borderWidth="2px"
-        minWidth={entrySize.w.toString() + "px"}
-        minHeight={entrySize.h.toString() + "px"}
+        minWidth={settings.entrySize.w.toString() + "px"}
+        minHeight={settings.entrySize.h.toString() + "px"}
       >
         <Heading>{tierModel.name}</Heading>
       </Center>

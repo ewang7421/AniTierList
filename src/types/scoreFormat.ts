@@ -5,6 +5,8 @@ export enum ScoreFormat {
   POINT_5 = "POINT_5",
   POINT_3 = "POINT_3",
 }
+
+export const defaultScoreFormat = ScoreFormat.POINT_10;
 function roundWithPrecision(value: number, precision: number): number {
   const multiplier = Math.pow(10, precision || 0);
   return Math.round(value * multiplier) / multiplier;

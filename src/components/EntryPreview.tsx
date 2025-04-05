@@ -1,6 +1,6 @@
 import { Box } from "@chakra-ui/react";
 import { TierListEntry } from "@/types/types";
-import { useLoadedUser } from "@/context/LoadedUserContext";
+import { useSettings } from "@/context/SettingsContext";
 
 interface EntryProps {
   entry: TierListEntry;
@@ -8,11 +8,11 @@ interface EntryProps {
 }
 
 export const EntryPreview = ({ entry }: EntryProps) => {
-  const { entrySize } = useLoadedUser();
+  const { settings } = useSettings();
   return (
     <Box
-      w={entrySize.w.toString() + "px"}
-      h={entrySize.h.toString() + "px"}
+      w={settings.entrySize.w.toString() + "px"}
+      h={settings.entrySize.h.toString() + "px"}
       bgImage={`url(${entry.imageUrl})`}
       bgSize="cover"
       bgRepeat="no-repeat"

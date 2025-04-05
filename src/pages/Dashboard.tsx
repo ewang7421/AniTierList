@@ -14,10 +14,12 @@ import { EntryPreview } from "@/components/EntryPreview.tsx";
 import { createPortal } from "react-dom";
 import { useLoadedUser } from "@/context/LoadedUserContext";
 import { PointerRectCollisionDetectionAlgorithm } from "@/dnd/PointerRectCollisionDetectionAlgorithm";
+import { useTierListModel } from "@/context/TierListModelContext";
 
 // when getting from localstorage, put a last updated and a force update on lists (maybe even rate limit the force update)
 export const Dashboard = () => {
-  const { loadedUser, tierListModel, setTierListModel } = useLoadedUser();
+  const { loadedUser } = useLoadedUser();
+  const { tierListModel, setTierListModel } = useTierListModel();
   const [activeEntry, setActiveEntry] = useState<TierListEntry | null>(null);
 
   const handleDragStart = (event: DragStartEvent) => {

@@ -18,15 +18,16 @@ import {
   PaginationRoot,
 } from "@/components/ui/pagination";
 import { ListLookup } from "@/components/ListLookup";
-import { useLoadedUser } from "@/context/LoadedUserContext";
+import { useTierListModel } from "@/context/TierListModelContext";
+import { useSettings } from "@/context/SettingsContext";
 export const Inventory = () => {
-  const { loadedUser, loadUserList, tierListModel, isLoading, entrySize } =
-    useLoadedUser();
+  const { tierListModel, isLoading } = useTierListModel();
+  const { settings } = useSettings();
   const columnCount = 10;
   const rowCount = 5;
   const pageSize = columnCount * rowCount;
 
-  const minHeight = entrySize.h * rowCount;
+  const minHeight = settings.entrySize.h * rowCount;
 
   const [page, setPage] = useState(1);
 
@@ -59,11 +60,7 @@ export const Inventory = () => {
   }, [tierListModel.inventory, page, pageSize]);
   return (
     <VStack>
-      <ListLookup
-        user={loadedUser}
-        loadListCallback={loadUserList}
-        setEntries={() => {}} //TODO: what is this?
-      />
+      <ListLookup />
       <Box position="relative">
         <SortableContext items={tierListModel.inventory.entries}>
           <Flex direction="column" align="center">
