@@ -61,4 +61,4 @@ export const default_tiers_map = new Map<ScoreFormat, TierModel[]>([
   [ScoreFormat.POINT_3, DEFAULT_TIERS_POINT_3],
 ]);
 
-export const default_tiers = DEFAULT_TIERS_POINT_100;
+export const default_tiers = DEFAULT_TIERS_POINT_5;

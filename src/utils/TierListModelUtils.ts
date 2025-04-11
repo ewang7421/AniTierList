@@ -1,6 +1,14 @@
-import { ListWebsite, TierListEntry, TierListModel } from "@/types/types";
+import { getList } from "@/api/api";
+import { ListWebsite, TierListEntry, TierListModel, User } from "@/types/types";
 import { createListCollection } from "@chakra-ui/react";
 
+//TODO: maybe doesn't belong here.
+export const listWebsites = createListCollection({
+  items: [
+    { label: "AniList", value: ListWebsite.AniList.toString() },
+    { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
+  ],
+});
 export const clearTierListModel = (tierListModel: TierListModel) => {
   const newTiers = tierListModel.tiers.map((tier) => ({
     ...tier,
@@ -55,11 +63,33 @@ export const loadFlatEntries = (
 
   return { ...prevTierListModel, tiers: newTiers, inventory: newInventory };
 };
+export const syncEntries = async (
+  user: User,
+  oldEntries: { tier: number | null; entry: TierListEntry }[]
+): Promise<{ tier: number | null; entry: TierListEntry }[]> => {
+  try {
+    const updated = await getList(user.site, user.name);
+    const oldMap: Map<number, { tier: number | null; entry: TierListEntry }> =
+      new Map(oldEntries.map((oldEntry) => [oldEntry.entry.id, oldEntry]));
+    const newMap: Map<number, { tier: number | null; entry: TierListEntry }> =
+      new Map(
+        updated.completedList.map((newEntry) => [
+          newEntry.id,
+          { tier: null, entry: newEntry },
+        ])
+      );
 
-//TODO: maybe doesn't belong here.
-export const listWebsites = createListCollection({
-  items: [
-    { label: "AniList", value: ListWebsite.AniList.toString() },
-    { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
-  ],
-});
+    for (const [id, newEntry] of newMap) {
+      const oldEntry = oldMap.get(id);
+      if (oldEntry != null) {
+        newMap.set(id, { ...newEntry, tier: oldEntry.tier });
+      }
+    }
+    return Array.from(newMap.values()).sort((a, b) =>
+      a.entry.title.localeCompare(b.entry.title)
+    );
+  } catch (error) {
+    console.error("Error during sync", error);
+    return oldEntries;
+  }
+};

@@ -22,21 +22,28 @@ import {
   listWebsites,
   loadFlatEntries,
 } from "@/utils/TierListModelUtils";
-//TODO: allow user to authenticate to get lists because of private entries
+import { PageSizeRadio } from "@/components/PageSizeRadio";
 
-const dropDownLocalStorageKey = "lookupDropDown";
+const dropDownKey = "lookupDropDown";
+const lastUpdatedKey = "lastUpdated";
 
-export const ListLookup = () => {
+export const InventoryHeader = () => {
   const { loadedUser, loadUser } = useLoadedUser();
   const { tierListModel, setTierListModel, isLoading, setIsLoading } =
     useTierListModel();
   const [listWebsite, setListWebsite] = useState<string[]>(
-    JSON.parse(window.localStorage.getItem(dropDownLocalStorageKey) || "[]")
+    JSON.parse(window.localStorage.getItem(dropDownKey) || "[]")
   );
   const [username, setUsername] = useState("");
 
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
+
+  const [lastUpdated, setLastUpdated] = useState<number | null>(
+    localStorage.getItem(lastUpdatedKey) != null
+      ? Number(localStorage.getItem(lastUpdatedKey))
+      : null
+  );
 
   // wrapper because select's event represents a list of selected items, not a singular one
   const fetchListWrapper = async () => {
@@ -64,8 +71,10 @@ export const ListLookup = () => {
     setIsLoading(true);
     try {
       await loadUser(site, username, setTierListModel);
+      setLastUpdated(Date.now());
     } catch (error) {
       if (error instanceof Error) {
+        //FIXME: ???
         console.log(error.message);
         setInputError(error.message);
       } else {
@@ -76,16 +85,21 @@ export const ListLookup = () => {
     }
   };
   useEffect(() => {
-    window.localStorage.setItem(
-      dropDownLocalStorageKey,
-      JSON.stringify(listWebsite)
-    );
+    window.localStorage.setItem(dropDownKey, JSON.stringify(listWebsite));
   }, [listWebsite]);
+
+  useEffect(() => {
+    if (lastUpdated == null) {
+      localStorage.removeItem(lastUpdatedKey);
+      return;
+    }
+    localStorage.setItem(lastUpdatedKey, lastUpdated.toString());
+  }, [lastUpdated]);
 
   // TODO: In general check equality operators and make them all type strict (===)
   return (
     <VStack width={"100%"}>
-      <HStack align="flex-start" minHeight="150px">
+      <HStack align="flex-start">
         <Field.Root invalid={selectError !== null}>
           <Select.Root
             variant="subtle"
@@ -161,8 +175,8 @@ export const ListLookup = () => {
         <Flex
           width="100%"
           direction="row"
-          justify="center"
-          align="center"
+          justify="start"
+          align="end"
           position="relative"
           gap={4}
         >
@@ -179,9 +193,11 @@ export const ListLookup = () => {
             setEntries={(newEntries) =>
               setTierListModel((prev) => loadFlatEntries(prev, newEntries))
             }
-            lastUpdatedKey="AniTierList:Inventory:lastUpdated"
+            lastUpdated={lastUpdated}
+            setLastUpdated={setLastUpdated}
             setComponentLoading={setIsLoading}
           />
+          <PageSizeRadio />
         </Flex>
       )}
     </VStack>

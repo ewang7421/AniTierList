@@ -8,7 +8,7 @@ import {
   Box,
   Spinner,
   Center,
-  Grid,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -17,22 +17,46 @@ import {
   PaginationPrevTrigger,
   PaginationRoot,
 } from "@/components/ui/pagination";
-import { ListLookup } from "@/components/ListLookup";
+import { InventoryHeader } from "@/components/InventoryHeader";
 import { useTierListModel } from "@/context/TierListModelContext";
 import { useSettings } from "@/context/SettingsContext";
 export const Inventory = () => {
   const { tierListModel, isLoading } = useTierListModel();
   const { settings } = useSettings();
-  const columnCount = 10;
-  const rowCount = 5;
-  const pageSize = columnCount * rowCount;
-
-  const minHeight = settings.entrySize.h * rowCount;
 
   const [page, setPage] = useState(1);
+  const [columns, setColumns] = useState<number>(1);
 
-  const startRange = (page - 1) * pageSize;
-  const endRange = startRange + pageSize;
+  // Can hard code factors for each page size, but this might be better\
+  // find factors in descending order to make breakpoints for pagesize
+  const findFactors = (n: number): number[] => {
+    const factors = new Set<number>();
+    for (let i = 1; i <= Math.sqrt(n); i++) {
+      if (n % i === 0) {
+        factors.add(i);
+        factors.add(n / i);
+      }
+    }
+
+    return Array.from(factors).sort((a, b) => b - a);
+  };
+  useEffect(() => {
+    const updateColumns = () => {
+      const componentWidth = window.innerWidth * 0.9;
+      const maxColumns = Math.floor(componentWidth / settings.entrySize.w);
+      const validFactors = findFactors(settings.inventoryPageSize).filter(
+        (f) => f <= maxColumns
+      );
+      const bestFit = validFactors.length ? Math.max(...validFactors) : 1;
+      setColumns(bestFit);
+    };
+    updateColumns();
+    window.addEventListener("resize", updateColumns);
+    return () => window.removeEventListener("resize", updateColumns);
+  }, [settings.entrySize, settings.inventoryPageSize]);
+
+  const startRange = (page - 1) * settings.inventoryPageSize;
+  const endRange = startRange + settings.inventoryPageSize;
 
   const visibleEntries = tierListModel.inventory.entries.slice(
     startRange,
@@ -53,31 +77,28 @@ export const Inventory = () => {
         page,
         Math.max(
           1,
-          Math.ceil(tierListModel.inventory.entries.length / pageSize)
+          Math.ceil(
+            tierListModel.inventory.entries.length / settings.inventoryPageSize
+          )
         )
       )
     );
-  }, [tierListModel.inventory, page, pageSize]);
+  }, [tierListModel.inventory, page, settings.inventoryPageSize]);
   return (
-    <VStack>
-      <ListLookup />
+    <VStack maxWidth={"85vw"}>
+      <InventoryHeader />
       <Box position="relative">
         <SortableContext items={tierListModel.inventory.entries}>
           <Flex direction="column" align="center">
-            <Grid
-              templateColumns={`repeat(${columnCount}, 1fr)`}
-              ref={setNodeRef}
-              minHeight={minHeight.toString() + "px"}
-              alignContent={"start"}
-            >
+            <SimpleGrid ref={setNodeRef} columns={columns}>
               {visibleEntries.map((entry) => (
                 <Entry key={entry.id} entry={entry} containerId={"inventory"} />
               ))}
-            </Grid>
+            </SimpleGrid>
             {tierListModel.inventory.entries.length > 0 && (
               <PaginationRoot
                 count={tierListModel.inventory.entries.length}
-                pageSize={pageSize}
+                pageSize={settings.inventoryPageSize}
                 onPageChange={(e) => {
                   setPage(e.page);
                 }}

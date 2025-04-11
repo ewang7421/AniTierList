@@ -81,4 +81,5 @@ export interface OAuthFields {
 
 export interface Settings {
   entrySize: { w: number; h: number };
+  inventoryPageSize: number;
 }
