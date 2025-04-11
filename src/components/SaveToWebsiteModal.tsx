@@ -32,10 +32,14 @@ import { useEffect } from "react";
 import { useState } from "react";
 import { getAniListAuthenticatedUser } from "@/api/anilist";
 import { useSearchParams } from "react-router-dom";
-import { useLoadedUser } from "@/context/LoadedUserContext";
 import { RefreshButton } from "./RefreshButton";
+import { useTierListModel } from "@/context/TierListModelContext";
 
 const refreshTimeInterval = 1000 * 60 * 60;
+const lastUpdatedKey = "authenticatedLastUpdated";
+const authenticatedUserKey = "authenticatedUser";
+const authenticatedListKey = "authenticatedList";
+const accessTokenKey = "accessToken";
 
 //TODO: remove prints and fix extra render whenever component opens and closes.
 
@@ -44,69 +48,53 @@ const refreshTimeInterval = 1000 * 60 * 60;
 export const SaveToWebsiteModal = () => {
   //TODO: can also put a warning if the user who is authenticated is different than the
   //      one in the tierlist
-  const lastUpdatedKey = "authenticatedLastUpdated";
-  const { tierListModel } = useLoadedUser();
+  const { tierListModel } = useTierListModel();
   const [searchParams, setSearchParams] = useSearchParams();
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(
-    JSON.parse(window.localStorage.getItem("authenticatedUser") || "null")
+    JSON.parse(window.localStorage.getItem(authenticatedUserKey) || "null")
   );
   const [authenticatedList, setAuthenticatedList] = useState<
     TierListEntry[] | null
   >(
-    JSON.parse(window.localStorage.getItem("authenticatedList") || "null") as
+    JSON.parse(window.localStorage.getItem(authenticatedListKey) || "null") as
       | TierListEntry[]
       | null
   );
   const [accessToken, setAccessToken] = useState<string | null>(
-    window.localStorage.getItem("access_token")
+    window.localStorage.getItem(accessTokenKey)
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const renderTimeSinceLastUpdated = localStorage.getItem(lastUpdatedKey)
-    ? Date.now() - Number(localStorage.getItem(lastUpdatedKey))
-    : 0;
-  const isAuthenticated =
-    authenticatedUser != null &&
-    authenticatedList != null &&
-    accessToken != null;
-  //TODO: shudl this be state? We want it to be updated at the initial render i gueses
+  const [lastUpdated, setLastUpdated] = useState<number | null>(
+    localStorage.getItem(lastUpdatedKey) != null
+      ? Number(localStorage.getItem(lastUpdatedKey))
+      : null
+  );
+
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const newToken =
-      hashParams.get("access_token") ?? localStorage.getItem("access_token"); //TODO: magic numbers/strings
+    const newToken = hashParams.get("access_token");
     if (!newToken) {
-      localStorage.removeItem("access_token");
       return;
     }
-    if (newToken !== accessToken) {
-      setAccessToken(newToken);
-      localStorage.setItem("access_token", newToken);
-    }
+    setAccessToken(newToken);
+    localStorage.setItem(accessTokenKey, newToken);
 
-    // Handle last updated timestamp
-    const lastUpdated = localStorage.getItem(lastUpdatedKey);
-    if (lastUpdated) {
-      const lastUpdatedDate = new Date(Number(lastUpdated));
-      const timeSinceLastUpdated = Date.now() - lastUpdatedDate.getTime();
-
-      if (timeSinceLastUpdated < 0) {
-        // if the last updated time is in the future, just set it to now to prevent errors
-        localStorage.setItem(lastUpdatedKey, Date.now().toString());
-      }
-
-      if (timeSinceLastUpdated > refreshTimeInterval) {
-        //TODO: implement refetching authenticated lists
-      }
-    }
-  }, [accessToken]);
+    setLastUpdated(null);
+  }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (accessToken == null) {
       return;
     }
-    if (renderTimeSinceLastUpdated < refreshTimeInterval) {
+
+    if (
+      lastUpdated != null &&
+      Date.now() - lastUpdated <= refreshTimeInterval
+    ) {
       return;
     }
+
     try {
       //TODO: refactor maybe
       getAniListAuthenticatedUser(accessToken)
@@ -123,26 +111,31 @@ export const SaveToWebsiteModal = () => {
         .catch((error) =>
           console.error("Failed to fetch authenticated user:", error)
         );
-      localStorage.setItem(lastUpdatedKey, Date.now().toString());
+      setLastUpdated(Date.now());
     } catch (error) {
       console.error("Invalid token:", error);
     }
-  }, [accessToken, renderTimeSinceLastUpdated, isAuthenticated]);
+  }, [accessToken, lastUpdated]);
 
   useEffect(() => {
-    console.log("authenticatedUser");
     localStorage.setItem(
-      "authenticatedUser",
+      authenticatedUserKey,
       JSON.stringify(authenticatedUser)
     );
   }, [authenticatedUser]);
   useEffect(() => {
-    console.log("authenticatedList");
     localStorage.setItem(
-      "authenticatedList",
+      authenticatedListKey,
       JSON.stringify(authenticatedList)
     );
   }, [authenticatedList]);
+  useEffect(() => {
+    if (lastUpdated == null) {
+      localStorage.removeItem(lastUpdatedKey);
+      return;
+    }
+    localStorage.setItem(lastUpdatedKey, lastUpdated.toString());
+  }, [lastUpdated]);
 
   return (
     <DialogRoot
@@ -164,13 +157,17 @@ export const SaveToWebsiteModal = () => {
         <DialogHeader>
           <DialogTitle>
             Save to{" "}
-            {isAuthenticated
+            {authenticatedUser != null &&
+            authenticatedList != null &&
+            accessToken != null
               ? ListWebsiteDisplayNames[authenticatedUser.site]
               : "Website"}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
-          {isAuthenticated ? (
+          {authenticatedUser != null &&
+          authenticatedList != null &&
+          accessToken != null ? (
             <VStack>
               <HStack width="100%" justify={"start"} align="end">
                 <Image
@@ -193,7 +190,8 @@ export const SaveToWebsiteModal = () => {
                       newEntries.map((newEntryData) => newEntryData.entry)
                     );
                   }}
-                  lastUpdatedKey={lastUpdatedKey}
+                  lastUpdated={lastUpdated}
+                  setLastUpdated={setLastUpdated}
                   setComponentLoading={setIsLoading}
                 />
               </HStack>
@@ -218,7 +216,6 @@ export const SaveToWebsiteModal = () => {
                       .map((tier) => {
                         return tier.entries.map((newEntry) => {
                           const newScore = tier.maxScore;
-                          // Find the corresponding old entry
                           const oldEntry = authenticatedList.find(
                             (oldEntry) => oldEntry.id === newEntry.id
                           );
@@ -229,10 +226,10 @@ export const SaveToWebsiteModal = () => {
                             <Table.Row key={newEntry.id}>
                               <Table.Cell>{newEntry.title}</Table.Cell>
                               <Table.Cell textAlign="end">
-                                {oldEntry ? newScore - oldEntry.score : ""}
+                                {newScore - oldEntry.score}
                               </Table.Cell>
                               <Table.Cell textAlign="end">
-                                {oldEntry ? oldEntry.score : ""}
+                                {oldEntry.score}
                               </Table.Cell>
                               <Table.Cell textAlign="end">
                                 {newScore}
@@ -284,9 +281,12 @@ export const SaveToWebsiteModal = () => {
           <Button
             variant="subtle"
             onClick={async () => {
-              if (isAuthenticated && accessToken != null) {
+              if (
+                authenticatedUser != null &&
+                authenticatedList != null &&
+                accessToken != null
+              ) {
                 try {
-                  console.log("clicked");
                   setIsSaving(true);
 
                   const changedEntries = tierListModel.tiers.map((tier) => {
@@ -314,15 +314,10 @@ export const SaveToWebsiteModal = () => {
                 }
                 try {
                   // Fetch user avatar asynchronously
-                  const access_token = localStorage.getItem("access_token");
-                  if (access_token == null) {
-                    throw Error("no access token");
-                  }
-                  await getAniListAuthenticatedUser(access_token)
+                  await getAniListAuthenticatedUser(accessToken)
                     .then((user) => {
                       // TODO: if statement might be redundant, maybe should represent logic with errors
                       if (user) {
-                        console.log("authUSERDOWN: ", user);
                         setAuthenticatedUser(user);
                         getList(user.site, user.name)
                           .then((mediaListCollection) =>

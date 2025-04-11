@@ -45,7 +45,7 @@ export type InventoryModel = {
 
 // The model for the tierlist
 export type TierListModel = {
-  scoreFormat: ScoreFormat | null;
+  scoreFormat: ScoreFormat;
   inventory: InventoryModel;
   tiers: TierModel[];
   dragging?: DraggedEntry;
@@ -77,4 +77,9 @@ export interface OAuthFields {
   clientSecret?: string;
   redirectUri?: string;
   responseType?: "token" | "code";
+}
+
+export interface Settings {
+  entrySize: { w: number; h: number };
+  inventoryPageSize: number;
 }

@@ -1,9 +1,8 @@
-import { ListWebsite, TierListEntry } from "@/types/types";
+import { ListWebsite } from "@/types/types";
 import {
   HStack,
   SelectItem,
   SelectValueText,
-  createListCollection,
   Input,
   Button,
   Field,
@@ -14,28 +13,37 @@ import {
   Select,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { User } from "@/types/types";
 import { getLogoURL } from "@/api/api";
 import { RefreshButton } from "./RefreshButton";
+import { useTierListModel } from "@/context/TierListModelContext";
 import { useLoadedUser } from "@/context/LoadedUserContext";
-//TODO: allow user to authenticate to get lists because of private entries
-interface ListLookupProps {
-  user: User | null;
-  loadListCallback: (site: ListWebsite, username: string) => Promise<void>;
-  setEntries: (entries: TierListEntry[]) => void;
-}
+import {
+  flattenTierListEntries,
+  listWebsites,
+  loadFlatEntries,
+} from "@/utils/TierListModelUtils";
+import { PageSizeRadio } from "@/components/PageSizeRadio";
 
-export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
-  const [username, setUsername] = useState("");
+const dropDownKey = "lookupDropDown";
+const lastUpdatedKey = "lastUpdated";
+
+export const InventoryHeader = () => {
+  const { loadedUser, loadUser } = useLoadedUser();
+  const { tierListModel, setTierListModel, isLoading, setIsLoading } =
+    useTierListModel();
   const [listWebsite, setListWebsite] = useState<string[]>(
-    JSON.parse(
-      window.localStorage.getItem("AniTierList:lookupDropdown:selected") || "[]"
-    )
+    JSON.parse(window.localStorage.getItem(dropDownKey) || "[]")
   );
+  const [username, setUsername] = useState("");
+
   const [selectError, setSelectError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
-  const { tierListModel, setTierListModel, isLoading, setIsLoading } =
-    useLoadedUser();
+
+  const [lastUpdated, setLastUpdated] = useState<number | null>(
+    localStorage.getItem(lastUpdatedKey) != null
+      ? Number(localStorage.getItem(lastUpdatedKey))
+      : null
+  );
 
   // wrapper because select's event represents a list of selected items, not a singular one
   const fetchListWrapper = async () => {
@@ -62,9 +70,11 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
     }
     setIsLoading(true);
     try {
-      await loadListCallback(site, username);
+      await loadUser(site, username, setTierListModel);
+      setLastUpdated(Date.now());
     } catch (error) {
       if (error instanceof Error) {
+        //FIXME: ???
         console.log(error.message);
         setInputError(error.message);
       } else {
@@ -75,21 +85,26 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
     }
   };
   useEffect(() => {
-    window.localStorage.setItem(
-      "AniTierList:lookupDropdown:selected",
-      JSON.stringify(listWebsite)
-    );
+    window.localStorage.setItem(dropDownKey, JSON.stringify(listWebsite));
   }, [listWebsite]);
+
+  useEffect(() => {
+    if (lastUpdated == null) {
+      localStorage.removeItem(lastUpdatedKey);
+      return;
+    }
+    localStorage.setItem(lastUpdatedKey, lastUpdated.toString());
+  }, [lastUpdated]);
 
   // TODO: In general check equality operators and make them all type strict (===)
   return (
     <VStack width={"100%"}>
-      <HStack align="flex-start" minHeight="150px">
+      <HStack align="flex-start">
         <Field.Root invalid={selectError !== null}>
           <Select.Root
             variant="subtle"
             collection={listWebsites}
-            value={[listWebsite.toString()]}
+            value={listWebsite}
             onValueChange={(e) => {
               setListWebsite(e.value);
             }}
@@ -156,64 +171,35 @@ export const ListLookup = ({ user, loadListCallback }: ListLookupProps) => {
           get
         </Button>
       </HStack>
-      {user && (
+      {loadedUser && (
         <Flex
           width="100%"
           direction="row"
-          justify="center"
-          align="center"
+          justify="start"
+          align="end"
           position="relative"
           gap={4}
         >
-          <Image src={user.avatar} width={"50px"} height={"50px"} />
-          <Heading>{user.name}</Heading>
-          <Image src={getLogoURL(user.site)} width={"50px"} height={"50px"} />
-          {
-            // TODO: show refresh available time like on opgg
-          }
+          <Image src={loadedUser.avatar} width={"50px"} height={"50px"} />
+          <Heading>{loadedUser.name}</Heading>
+          <Image
+            src={getLogoURL(loadedUser.site)}
+            width={"50px"}
+            height={"50px"}
+          />
           <RefreshButton
-            user={user}
-            oldEntries={[
-              ...tierListModel.inventory.entries.map((entry) => ({
-                tier: null,
-                entry: entry,
-              })),
-              ...tierListModel.tiers.flatMap((tier, index) =>
-                tier.entries.map((entry) => ({ tier: index, entry: entry }))
-              ),
-            ]}
+            user={loadedUser}
+            oldEntries={flattenTierListEntries(tierListModel)}
             setEntries={(newEntries) =>
-              setTierListModel((prev) => {
-                console.log("newEntries", newEntries);
-                const newInventory = {
-                  entries: newEntries
-                    .filter((entryData) => entryData.tier === null)
-                    .map((entryData) => entryData.entry),
-                };
-                const newTiers = prev.tiers.map((prevTier, index) => ({
-                  ...prevTier,
-                  entries: prevTier.entries.filter((prevEntry) => {
-                    const newEntryData = newEntries.find(
-                      (newEntryData) => newEntryData.entry.id === prevEntry.id
-                    );
-                    return newEntryData != null && newEntryData.tier === index;
-                  }),
-                }));
-                return { ...prev, tiers: newTiers, inventory: newInventory };
-              })
+              setTierListModel((prev) => loadFlatEntries(prev, newEntries))
             }
-            lastUpdatedKey="AniTierList:Inventory:lastUpdated"
+            lastUpdated={lastUpdated}
+            setLastUpdated={setLastUpdated}
             setComponentLoading={setIsLoading}
           />
+          <PageSizeRadio />
         </Flex>
       )}
     </VStack>
   );
 };
-
-const listWebsites = createListCollection({
-  items: [
-    { label: "AniList", value: ListWebsite.AniList.toString() },
-    { label: "MyAnimeList", value: ListWebsite.MyAnimeList.toString() },
-  ],
-});

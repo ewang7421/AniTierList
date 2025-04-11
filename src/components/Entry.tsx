@@ -2,7 +2,7 @@ import { Box } from "@chakra-ui/react";
 import { DroppableType, TierListEntry } from "@/types/types";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useLoadedUser } from "@/context/LoadedUserContext";
+import { useSettings } from "@/context/SettingsContext";
 
 interface EntryProps {
   entry: TierListEntry;
@@ -24,12 +24,12 @@ export const Entry = ({ entry, containerId = -1 }: EntryProps) => {
     transition,
   };
 
-  const { entrySize } = useLoadedUser();
+  const { settings } = useSettings();
   return (
     <Box
       id={entry.id.toString()}
-      w={entrySize.w.toString() + "px"}
-      h={entrySize.h.toString() + "px"}
+      w={settings.entrySize.w.toString() + "px"}
+      h={settings.entrySize.h.toString() + "px"}
       bgImage={`url(${entry.imageUrl})`}
       bgSize="cover"
       bgRepeat="no-repeat"
